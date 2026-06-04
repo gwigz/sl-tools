@@ -1,4 +1,5 @@
 import { fitRect } from "./grid";
+import { safeDrawImage } from "./image";
 
 export type FitMode = "cover" | "contain" | "stretch";
 
@@ -17,30 +18,42 @@ export interface ComposeOptions {
   sheetWidth: number;
   sheetHeight: number;
   fit: FitMode;
+  /** The in-world face aspect (width / height) the cell is stretched to. */
+  faceAspect: number;
   background: string;
   overlay?: OverlayOptions | null;
 }
 
-function drawFitted(
+// Fit `img` so that it looks correct AFTER Second Life stretches the cell to the
+// face aspect. We fit into a normalized face box, then map that placement into
+// the (possibly differently-proportioned) cell, pre-distorting so SL's cell→face
+// stretch reproduces the intended fit at the right aspect.
+function drawFaceFitted(
   ctx: CanvasRenderingContext2D,
   img: ImageBitmap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
+  cellX: number,
+  cellY: number,
+  cellW: number,
+  cellH: number,
   fit: FitMode,
+  faceAspect: number,
 ) {
-  const { dx, dy, dw, dh } = fitRect(img.width, img.height, w, h, fit);
+  if (img.width === 0 || img.height === 0) return;
+  const faceW = faceAspect > 0 ? faceAspect : 1;
+  const { dx, dy, dw, dh } = fitRect(img.width, img.height, faceW, 1, fit);
+  const sx = cellW / faceW;
+  const sy = cellH;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
+  ctx.rect(cellX, cellY, cellW, cellH);
   ctx.clip();
-  ctx.drawImage(img, x + dx, y + dy, dw, dh);
+  safeDrawImage(ctx, img, cellX + dx * sx, cellY + dy * sy, dw * sx, dh * sy);
   ctx.restore();
 }
 
 export function composeSheet(options: ComposeOptions) {
-  const { frames, cols, rows, sheetWidth, sheetHeight, fit, background, overlay } = options;
+  const { frames, cols, rows, sheetWidth, sheetHeight, fit, faceAspect, background, overlay } =
+    options;
 
   const cellW = sheetWidth / cols;
   const cellH = sheetHeight / rows;
@@ -60,43 +73,33 @@ export function composeSheet(options: ComposeOptions) {
   for (let i = 0; i < count; i++) {
     const cx = (i % cols) * cellW;
     const cy = Math.floor(i / cols) * cellH;
-    drawFitted(ctx, frames[i], cx, cy, cellW, cellH, fit);
+    drawFaceFitted(ctx, frames[i], cx, cy, cellW, cellH, fit, faceAspect);
 
     if (overlay && overlay.perCell) {
-      drawOverlay(ctx, overlay, cx, cy, cellW, cellH);
+      ctx.save();
+      ctx.globalAlpha = overlay.opacity;
+      ctx.globalCompositeOperation = overlay.blend;
+      drawFaceFitted(ctx, overlay.bitmap, cx, cy, cellW, cellH, overlay.fit, faceAspect);
+      ctx.restore();
     }
   }
 
-  if (overlay && !overlay.perCell) {
-    drawOverlay(ctx, overlay, 0, 0, sheetWidth, sheetHeight);
+  if (overlay && !overlay.perCell && overlay.bitmap.width > 0) {
+    const { dx, dy, dw, dh } = fitRect(
+      overlay.bitmap.width,
+      overlay.bitmap.height,
+      sheetWidth,
+      sheetHeight,
+      overlay.fit,
+    );
+    ctx.save();
+    ctx.globalAlpha = overlay.opacity;
+    ctx.globalCompositeOperation = overlay.blend;
+    safeDrawImage(ctx, overlay.bitmap, dx, dy, dw, dh);
+    ctx.restore();
   }
 
   return canvas;
-}
-
-function drawOverlay(
-  ctx: CanvasRenderingContext2D,
-  overlay: OverlayOptions,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-) {
-  const { dx, dy, dw, dh } = fitRect(
-    overlay.bitmap.width,
-    overlay.bitmap.height,
-    w,
-    h,
-    overlay.fit,
-  );
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  ctx.globalAlpha = overlay.opacity;
-  ctx.globalCompositeOperation = overlay.blend;
-  ctx.drawImage(overlay.bitmap, x + dx, y + dy, dw, dh);
-  ctx.restore();
 }
 
 export function canvasToBlob(canvas: HTMLCanvasElement, type = "image/png"): Promise<Blob> {

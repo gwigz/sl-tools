@@ -3,6 +3,7 @@
 import { FileVideo, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { safeDrawImage } from "~/lib/sl/image";
 import { cn } from "~/lib/utils";
 
 const DEFAULT_ACCEPT = "video/*,image/gif,image/webp,image/apng,image/png,image/*";
@@ -74,7 +75,7 @@ export function Dropzone({
 
       <div className={cn(compact && "min-w-0 flex-1")}>
         <p className={cn("truncate font-medium", compact ? "text-xs" : "text-sm")}>
-          {label ?? (compact ? "Replace source" : "Drop a video or GIF here")}
+          {label ?? (compact ? "Replace source" : "Drop any video or animated image")}
         </p>
         <p
           className={cn(
@@ -82,9 +83,7 @@ export function Dropzone({
             compact ? "text-[0.7rem]" : "mt-1 text-xs",
           )}
         >
-          {compact
-            ? "Click or drop to replace"
-            : "Or click to browse. Supports MP4, WebM, MOV, GIF, and animated WebP or PNG."}
+          {compact ? "Click or drop to replace" : "or click to browse"}
         </p>
       </div>
     </div>
@@ -96,7 +95,7 @@ function Thumbnail({ bitmap }: { bitmap: ImageBitmap }) {
 
   useEffect(() => {
     const canvas = ref.current;
-    if (!canvas) return;
+    if (!canvas || bitmap.width === 0) return;
     const size = 44;
     const scale = Math.min(size / bitmap.width, size / bitmap.height);
     const w = Math.max(1, Math.round(bitmap.width * scale));
@@ -104,7 +103,7 @@ function Thumbnail({ bitmap }: { bitmap: ImageBitmap }) {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    ctx?.drawImage(bitmap, 0, 0, w, h);
+    if (ctx) safeDrawImage(ctx, bitmap, 0, 0, w, h);
   }, [bitmap]);
 
   return (

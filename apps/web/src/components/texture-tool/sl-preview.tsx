@@ -157,10 +157,6 @@ export function SlPreview(props: PlaybackProps) {
           </div>
         </DialogContent>
       </Dialog>
-      <Button variant="outline" size="sm" onClick={() => setPlaying((p) => !p)} disabled={!sheet}>
-        {playing ? <Pause /> : <Play />}
-        {playing ? "Pause" : "Play"}
-      </Button>
     </div>
   );
 }

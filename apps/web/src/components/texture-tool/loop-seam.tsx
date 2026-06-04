@@ -4,6 +4,8 @@ import { LoaderCircle, Wand2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { Button } from "~/components/ui/button";
+import { Spinner } from "~/components/ui/spinner";
+import { safeDrawImage } from "~/lib/sl/image";
 
 const CHECKER =
   "bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:12px_12px]";
@@ -30,9 +32,11 @@ function FrameBox({
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas || !bitmap) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0);
+    safeDrawImage(ctx, bitmap, 0, 0);
   }, [bitmap]);
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -49,7 +53,15 @@ function FrameBox({
 
 // Slowly cycles the last few frames into the first few so the loop's wrap point
 // can be scrutinised.
-function SeamPlayer({ frames, faceAspect }: { frames: ImageBitmap[]; faceAspect: number }) {
+function SeamPlayer({
+  frames,
+  faceAspect,
+  loading,
+}: {
+  frames: ImageBitmap[];
+  faceAspect: number;
+  loading?: boolean;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -67,10 +79,10 @@ function SeamPlayer({ frames, faceAspect }: { frames: ImageBitmap[]; faceAspect:
 
     const draw = (idx: number) => {
       const bmp = frames[idx];
-      if (!bmp) return;
+      if (!bmp || bmp.width === 0) return;
       canvas.width = bmp.width;
       canvas.height = bmp.height;
-      ctx.drawImage(bmp, 0, 0);
+      safeDrawImage(ctx, bmp, 0, 0);
     };
 
     let raf = 0;
@@ -94,10 +106,15 @@ function SeamPlayer({ frames, faceAspect }: { frames: ImageBitmap[]; faceAspect:
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div
-        className={`overflow-hidden rounded border-2 border-primary/60 ${CHECKER}`}
+        className={`relative overflow-hidden rounded border-2 border-primary/60 ${CHECKER}`}
         style={{ aspectRatio: `${faceAspect > 0 ? faceAspect : 1}` }}
       >
         <canvas ref={ref} className="h-full w-full object-cover" />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+            <Spinner />
+          </div>
+        )}
       </div>
       <span className="text-center text-[0.65rem] text-muted-foreground">seam loop</span>
     </div>
@@ -111,6 +128,7 @@ export function LoopSeam({
   startTime,
   endTime,
   faceAspect,
+  loading,
   onAutoMatch,
   autoMatching,
 }: {
@@ -121,6 +139,7 @@ export function LoopSeam({
   startTime: number;
   endTime: number;
   faceAspect: number;
+  loading?: boolean;
   onAutoMatch: () => void;
   autoMatching: boolean;
 }) {
@@ -131,12 +150,12 @@ export function LoopSeam({
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-2">
         <FrameBox bitmap={first} faceAspect={faceAspect} caption={`in · ${fmt(startTime)}`} />
-        <SeamPlayer frames={frames} faceAspect={faceAspect} />
+        <SeamPlayer frames={frames} faceAspect={faceAspect} loading={loading} />
         <FrameBox bitmap={last} faceAspect={faceAspect} caption={`out · ${fmt(endTime)}`} />
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[0.7rem] text-muted-foreground">
-          Match the last and first frames for a seamless loop, or enable Ping-Pong.
+          Match the last and first frames for a seamless loop, or enable ping-pong
         </p>
         <Button
           variant="outline"

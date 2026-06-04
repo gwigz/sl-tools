@@ -20,6 +20,8 @@ export interface FrameSampler {
   height: number;
   durationMs: number;
   nativeFrameCount: number;
+  /** Source frame rate in FPS (0 if unknown). */
+  frameRate: number;
   sampleByCount: (n: number, opts?: SampleOptions) => Promise<ImageBitmap[]>;
   /** Decode frames at specific times (seconds), for scrubbing / loop tuning. */
   sampleAtTimes: (timesSec: number[], opts?: SampleOptions) => Promise<ImageBitmap[]>;
@@ -153,6 +155,12 @@ async function loadVideoWebCodecs(file: File): Promise<FrameSampler | null> {
     const width = track.displayWidth;
     const height = track.displayHeight;
     const duration = await track.computeDuration();
+    let frameRate = 0;
+    try {
+      frameRate = (await track.computePacketStats(60)).averagePacketRate;
+    } catch {
+      // Frame rate is best-effort.
+    }
 
     const packetSink = new EncodedPacketSink(track);
     let sink: import("mediabunny").CanvasSink | null = null;
@@ -197,6 +205,7 @@ async function loadVideoWebCodecs(file: File): Promise<FrameSampler | null> {
       height,
       durationMs: duration * 1000,
       nativeFrameCount: 0,
+      frameRate,
       sampleByCount(n, opts) {
         return serialize(() => {
           const [a, b] = resolveRange(opts?.range);
@@ -264,6 +273,7 @@ async function loadVideo(file: File): Promise<FrameSampler> {
     height,
     durationMs: duration * 1000,
     nativeFrameCount: 0,
+    frameRate: 0,
     sampleByCount(n, opts) {
       const [a, b] = resolveRange(opts?.range);
       const targets = Array.from({ length: n }, (_, i) =>
@@ -312,6 +322,7 @@ async function loadAnimated(file: File): Promise<FrameSampler> {
     height,
     durationMs,
     nativeFrameCount: frameCount,
+    frameRate: durationMs > 0 ? frameCount / (durationMs / 1000) : 0,
     async sampleByCount(n, opts) {
       const resize = resizeOptions(width, height, opts?.maxDecodeSize);
       const [a, b] = resolveRange(opts?.range);
@@ -357,6 +368,7 @@ async function loadImage(file: File): Promise<FrameSampler> {
     height: source.height,
     durationMs: 0,
     nativeFrameCount: 1,
+    frameRate: 0,
     async sampleByCount(n, opts) {
       const resize = resizeOptions(source.width, source.height, opts?.maxDecodeSize);
       const frame = resize ? await createImageBitmap(source, resize) : source;

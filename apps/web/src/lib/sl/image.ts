@@ -12,6 +12,36 @@ export function isTga(file: File) {
   return TGA_TYPES.includes(file.type) || TGA_EXT.test(file.name);
 }
 
+type DrawArgs =
+  | [dx: number, dy: number]
+  | [dx: number, dy: number, dw: number, dh: number]
+  | [
+      sx: number,
+      sy: number,
+      sw: number,
+      sh: number,
+      dx: number,
+      dy: number,
+      dw: number,
+      dh: number,
+    ];
+
+// drawImage on a closed ImageBitmap throws InvalidStateError; close() zeroes its
+// dimensions. Returns false when the source is closed so callers can stop drawing.
+export function safeDrawImage(
+  ctx: CanvasRenderingContext2D,
+  source: ImageBitmap,
+  ...args: DrawArgs
+): boolean {
+  if (source.width === 0 || source.height === 0) return false;
+  try {
+    (ctx.drawImage as (img: ImageBitmap, ...a: number[]) => void)(source, ...args);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function loadImageBitmap(file: File) {
   if (isTga(file)) {
     const data = decodeTga(await file.arrayBuffer());

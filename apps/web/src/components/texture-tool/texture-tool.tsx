@@ -9,7 +9,9 @@ import {
   ImageIcon,
   LoaderCircle,
   RotateCcw,
-  Sparkles,
+  TriangleAlert,
+  Video,
+  Wand2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -42,7 +44,7 @@ import {
 import { canvasToBlob, composeSheet, type FitMode, type OverlayOptions } from "~/lib/sl/compose";
 import { type FrameSampler, loadSource } from "~/lib/sl/extract";
 import { autoGrid, chooseSheet } from "~/lib/sl/grid";
-import { loadImageBitmap } from "~/lib/sl/image";
+import { isTga, loadImageBitmap } from "~/lib/sl/image";
 import { buildScript, type ScriptLanguage } from "~/lib/sl/lsl";
 
 import { Dropzone } from "./dropzone";
@@ -84,6 +86,7 @@ interface SourceMeta {
   height: number;
   durationMs: number;
   nativeFrameCount: number;
+  frameRate: number;
 }
 
 const SETTINGS_KEY = "sl-texanim:settings:v1";
@@ -141,12 +144,25 @@ function downscaleData(bitmap: ImageBitmap, size = 32): Uint8ClampedArray {
   return ctx.getImageData(0, 0, size, size).data;
 }
 
+// Luma-weighted (Rec. 601) per-pixel difference, so the match favours frames that
+// look alike rather than ones with an equal sum of raw channel deltas.
 function frameDiff(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
   let sum = 0;
   for (let i = 0; i < a.length; i += 4) {
-    sum += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+    sum +=
+      0.299 * Math.abs(a[i] - b[i]) +
+      0.587 * Math.abs(a[i + 1] - b[i + 1]) +
+      0.114 * Math.abs(a[i + 2] - b[i + 2]);
   }
   return sum;
+}
+
+function bitmapToPngDataUrl(bitmap: ImageBitmap): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0);
+  return canvas.toDataURL("image/png");
 }
 
 function fileToDataUrl(file: Blob): Promise<string> {
@@ -237,7 +253,7 @@ export function TextureTool() {
 
   const sampleToken = useRef(0);
   const framesRef = useRef<ImageBitmap[]>([]);
-  const debouncedCount = useDebounced(frameCount, 250);
+  const loadedOnceRef = useRef(false);
   const debouncedCommittedTrim = useDebounced(committedTrim, 200);
   const commitTrim = useCallback((next: [number, number]) => {
     setTrim(next);
@@ -259,7 +275,18 @@ export function TextureTool() {
   );
 
   const cellCapacity = cols * rows;
-  const placedFrames = Math.min(frameCount, cellCapacity);
+  // With auto-grid off the frame count is driven by the manual grid (cols × rows);
+  // with it on, the user-set frame count drives everything.
+  const targetFrames = autoGridOn ? frameCount : cellCapacity;
+  const debouncedTargetFrames = useDebounced(targetFrames, 250);
+  const placedFrames = Math.min(targetFrames, cellCapacity);
+
+  // Tie fps to the trimmed length: fps = frames / duration makes the loop play
+  // back at the source's real-time speed.
+  const trimLength = trim[1] - trim[0];
+  const loopLength = fps > 0 ? placedFrames / fps : 0;
+  const matchedFps =
+    trimLength > 0 ? Math.min(60, Math.max(1, Math.round(placedFrames / trimLength))) : fps;
 
   const applySettings = useCallback((s: Partial<Settings>) => {
     setFps(s.fps ?? DEFAULT_SETTINGS.fps);
@@ -298,7 +325,7 @@ export function TextureTool() {
         const { dataUrl, name } = JSON.parse(raw) as { dataUrl?: string; name?: string };
         if (!dataUrl) return;
         const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], name ?? "overlay", { type: blob.type });
+        const file = new File([blob], "overlay", { type: blob.type });
         const bitmap = await loadImageBitmap(file);
         setOverlayBitmap(bitmap);
         setOverlayName(name ?? null);
@@ -401,7 +428,7 @@ export function TextureTool() {
       const animated = next.nativeFrameCount >= 2 || (next.kind === "video" && next.durationMs > 0);
       if (!animated) {
         next.dispose();
-        toast.error("Choose an animated source — a video, GIF, or animated WebP");
+        toast.error("Choose an animated source, such as a video, GIF, or animated WebP");
         return;
       }
       setSampler((prev) => {
@@ -415,28 +442,28 @@ export function TextureTool() {
         height: next.height,
         durationMs: next.durationMs,
         nativeFrameCount: next.nativeFrameCount,
+        frameRate: next.frameRate,
       });
 
-      setTrim([0, next.durationMs / 1000]);
-      setCommittedTrim([0, next.durationMs / 1000]);
-      if (next.kind === "image") {
-        setFrameCount(1);
-      } else {
-        setFrameCount(Math.min(MAX_FRAMES, Math.max(1, next.nativeFrameCount || 16)));
+      const firstLoad = !loadedOnceRef.current;
+      loadedOnceRef.current = true;
+
+      // Default to a short loop window — long clips are far easier to tune this
+      // way, and the timeline opens zoomed-friendly.
+      const dur = next.durationMs / 1000;
+      const loopLen = dur > 0 ? Math.min(2, dur) : 0;
+      setTrim([0, loopLen]);
+      setCommittedTrim([0, loopLen]);
+
+      // Match playback fps to the source frame rate.
+      if (next.frameRate > 0) {
+        setFps(Math.min(60, Math.max(1, Math.round(next.frameRate))));
       }
-      if (next.kind === "animated" && next.durationMs > 0) {
-        const rate = next.nativeFrameCount / (next.durationMs / 1000);
-        if (Number.isFinite(rate) && rate > 0) {
-          setFps(Math.min(30, Math.max(1, Math.round(rate))));
-        }
-      }
-      if (next.width > 0 && next.height > 0) {
-        setAspect((a) => ({
-          ...a,
-          mode: "pixels",
-          pixelW: next.width,
-          pixelH: next.height,
-        }));
+
+      // Derive the face aspect from the source only on the first load; swapping
+      // clips keeps the user's output settings, frame count, and ratio.
+      if (firstLoad && next.width > 0 && next.height > 0) {
+        setAspect((a) => ({ ...a, mode: "pixels", pixelW: next.width, pixelH: next.height }));
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load that file");
@@ -448,7 +475,7 @@ export function TextureTool() {
   useEffect(() => {
     if (!sampler) return;
     const token = ++sampleToken.current;
-    const count = Math.max(1, Math.min(MAX_FRAMES, debouncedCount));
+    const count = Math.max(1, Math.min(MAX_FRAMES, debouncedTargetFrames));
     setExtracting(true);
     setProgress(0);
     sampler
@@ -461,7 +488,6 @@ export function TextureTool() {
       })
       .then((next) => {
         if (token === sampleToken.current) {
-          closeFrames(framesRef.current, new Set(next));
           framesRef.current = next;
           setFrames(next);
           setExtracting(false);
@@ -473,7 +499,17 @@ export function TextureTool() {
         if (token === sampleToken.current) setExtracting(false);
         toast.error("Failed to extract frames");
       });
-  }, [sampler, debouncedCount, debouncedCommittedTrim]);
+  }, [sampler, debouncedTargetFrames, debouncedCommittedTrim]);
+
+  // Free the prior frame generation only after the new one has committed, so no
+  // live consumer is ever holding a closed bitmap mid-draw.
+  const prevFramesRef = useRef<ImageBitmap[]>([]);
+  useEffect(() => {
+    const prev = prevFramesRef.current;
+    prevFramesRef.current = frames;
+    if (prev !== frames) closeFrames(prev, new Set(frames));
+  }, [frames]);
+  useEffect(() => () => closeFrames(framesRef.current), []);
 
   // Whole-clip thumbnails for the trim timeline (one decode pass per source).
   const timelineRef = useRef<TimelineThumb[]>([]);
@@ -525,26 +561,40 @@ export function TextureTool() {
     try {
       const startT = trim[0];
       const endT = trim[1];
+
+      // The loop wraps end → start, so the cleanest cut is where the end frame
+      // most resembles the first frame.
+      const [refBmp] = await sampler.sampleAtTimes([startT], { maxDecodeSize: 64 });
+      const reference = downscaleData(refBmp, 48);
+      refBmp.close();
+
+      const scoreTimes = async (times: number[]) => {
+        const decoded = await sampler.sampleAtTimes(times, { maxDecodeSize: 64 });
+        const scores = decoded.map((b) => frameDiff(reference, downscaleData(b, 48)));
+        for (const b of decoded) b.close();
+        let best = 0;
+        for (let i = 1; i < scores.length; i++) if (scores[i] < scores[best]) best = i;
+        return { time: times[best], step: (times[1] ?? times[0]) - times[0] };
+      };
+
+      // Coarse sweep over a window around the current handle…
       const window = Math.min(durationSec * 0.15, Math.max(frameStep * 8, (endT - startT) * 0.3));
       const lo = Math.max(startT + frameStep, endT - window);
       const hi = Math.min(durationSec, endT + window);
-      const k = 16;
-      const candTimes = Array.from({ length: k }, (_, i) => lo + (i / (k - 1)) * (hi - lo));
-      const decoded = await sampler.sampleAtTimes([startT, ...candTimes], { maxDecodeSize: 64 });
-      const reference = downscaleData(decoded[0]);
-      let bestScore = Infinity;
-      let bestTime = endT;
-      for (let i = 1; i < decoded.length; i++) {
-        const score = frameDiff(reference, downscaleData(decoded[i]));
-        if (score < bestScore) {
-          bestScore = score;
-          bestTime = candTimes[i - 1];
-        }
-      }
-      for (const b of decoded) b.close();
+      const coarse = await scoreTimes(
+        Array.from({ length: 16 }, (_, i) => lo + (i / 15) * (hi - lo)),
+      );
+
+      // …then a fine sweep within ±1 coarse step for sub-frame precision.
+      const fLo = Math.max(startT + frameStep, coarse.time - coarse.step);
+      const fHi = Math.min(durationSec, coarse.time + coarse.step);
+      const fine = await scoreTimes(
+        Array.from({ length: 21 }, (_, i) => fLo + (i / 20) * (fHi - fLo)),
+      );
+
       const matched: [number, number] = [
         trim[0],
-        Math.min(durationSec, Math.max(trim[0] + frameStep, bestTime)),
+        Math.min(durationSec, Math.max(trim[0] + frameStep, fine.time)),
       ];
       setTrim(matched);
       setCommittedTrim(matched);
@@ -593,7 +643,8 @@ export function TextureTool() {
 
   const handleOverlay = useCallback(async (file: File) => {
     try {
-      const [bitmap, dataUrl] = await Promise.all([loadImageBitmap(file), fileToDataUrl(file)]);
+      const bitmap = await loadImageBitmap(file);
+      const dataUrl = isTga(file) ? bitmapToPngDataUrl(bitmap) : await fileToDataUrl(file);
       setOverlayBitmap((prev) => {
         prev?.close();
         return bitmap;
@@ -629,6 +680,7 @@ export function TextureTool() {
         sheetWidth: sheetDims.sheetWidth,
         sheetHeight: sheetDims.sheetHeight,
         fit,
+        faceAspect,
         background: transparent ? "transparent" : background,
         overlay,
       }),
@@ -640,6 +692,7 @@ export function TextureTool() {
     sheetDims.sheetWidth,
     sheetDims.sheetHeight,
     fit,
+    faceAspect,
     transparent,
     background,
     overlayEnabled,
@@ -891,7 +944,7 @@ export function TextureTool() {
         <Card size="sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="size-4" /> Source
+              <Video className="size-4" /> Source
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -931,23 +984,47 @@ export function TextureTool() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <SliderField
-              label="Frames"
-              value={frameCount}
-              min={1}
-              max={meta?.kind === "image" ? 1 : MAX_FRAMES}
-              step={1}
-              onChange={setFrameCount}
-            />
+            {autoGridOn ? (
+              <SliderField
+                label="Frames"
+                value={frameCount}
+                min={1}
+                max={MAX_FRAMES}
+                step={1}
+                onChange={setFrameCount}
+              />
+            ) : (
+              <div className="flex items-center justify-between text-xs">
+                <Label className="text-xs">Frames</Label>
+                <span className="font-mono text-muted-foreground">
+                  {cellCapacity} (grid {cols}×{rows})
+                </span>
+              </div>
+            )}
             <SliderField
               label="FPS"
               value={fps}
               min={1}
-              max={30}
+              max={60}
               step={1}
               onChange={setFps}
               suffix="fps"
             />
+            {meta && durationSec > 0 && trimLength > 0 && (
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  loop {formatTime(loopLength)} · source {formatTime(trimLength)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setFps(matchedFps)}
+                >
+                  <Wand2 /> Match
+                </Button>
+              </div>
+            )}
             {meta && durationSec > 0 && (
               <>
                 <CardDivider />
@@ -975,6 +1052,7 @@ export function TextureTool() {
                       startTime={trim[0]}
                       endTime={trim[1]}
                       faceAspect={faceAspect}
+                      loading={extracting}
                       onAutoMatch={handleAutoMatch}
                       autoMatching={autoMatching}
                     />
@@ -1011,22 +1089,19 @@ export function TextureTool() {
             )}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                {cols} × {rows} grid ({cellCapacity} cells)
+                {cols} × {rows} grid ({cellCapacity} cells ·{" "}
+                {Math.floor(sheetDims.sheetWidth / cols)}×{Math.floor(sheetDims.sheetHeight / rows)}
+                px)
               </span>
               <span>{placedFrames} placed</span>
             </div>
-            {frameCount > cellCapacity && (
-              <p className="text-xs text-destructive">
-                {`${frameCount - cellCapacity} frame(s) won't fit. Add more rows or columns.`}
-              </p>
-            )}
           </CardContent>
         </Card>
 
         <Card size="sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="size-4" /> Output
+              <ImageIcon className="size-4" /> Output
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -1145,7 +1220,7 @@ export function TextureTool() {
             </div>
             <SwitchRow
               label="Power-of-Two"
-              hint="Required for Second Life. Sizes 8 to 2048, can be non-square."
+              hint="Required for Second Life, sizes 8 to 2048, can be non-square"
               checked={pow2}
               onChange={setPow2}
             />
@@ -1315,7 +1390,7 @@ export function TextureTool() {
             <ScriptBlock code={script} />
             <p className="text-xs text-muted-foreground">
               Upload the PNG as a texture, drop it on the prim, then paste this into a new{" "}
-              {scriptLang === "slua" ? "SLua" : "LSL"} script.
+              {scriptLang === "slua" ? "SLua" : "LSL"} script
             </p>
           </CardContent>
         </Card>
@@ -1325,8 +1400,8 @@ export function TextureTool() {
         <DialogContent className="max-w-sm">
           <DialogTitle>Reset all settings?</DialogTitle>
           <DialogDescription>
-            This clears your saved preferences and overlay texture and restores the defaults. Your
-            current source stays loaded.
+            This clears your saved preferences and overlay texture and restores the defaults, your
+            current source stays loaded
           </DialogDescription>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setResetOpen(false)}>
@@ -1390,6 +1465,12 @@ export function TextureTool() {
                   {cols}×{rows} grid · {placedFrames} frames
                 </span>
               </div>
+              {meta && trimLength > 0 && Math.abs(fps - matchedFps) >= 1 && (
+                <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                  <TriangleAlert className="size-3 shrink-0" />
+                  FPS not synced to loop ({matchedFps} fps)
+                </p>
+              )}
               {extracting && (
                 <div className="flex items-center gap-2">
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
