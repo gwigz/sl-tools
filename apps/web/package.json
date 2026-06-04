@@ -1,0 +1,40 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.5.0",
+    "@gwigz/sl-tools-env": "workspace:*",
+    "@gwigz/sl-tools-ui": "workspace:*",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "catalog:",
+    "lucide-react": "^1.17.0",
+    "mediabunny": "^1.46.0",
+    "next": "^16.2.0",
+    "next-themes": "catalog:",
+    "react": "catalog:",
+    "react-colorful": "^5.7.0",
+    "react-dom": "catalog:",
+    "shadcn": "^4.10.0",
+    "sonner": "catalog:",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@gwigz/sl-tools-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^20",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

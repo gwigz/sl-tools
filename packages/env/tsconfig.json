@@ -1,0 +1,3 @@
+{
+  "extends": "@gwigz/sl-tools-config/tsconfig.base.json"
+}

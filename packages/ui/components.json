@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-lyra",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@gwigz/sl-tools-ui/components",
+    "utils": "@gwigz/sl-tools-ui/lib/utils",
+    "hooks": "@gwigz/sl-tools-ui/hooks",
+    "lib": "@gwigz/sl-tools-ui/lib",
+    "ui": "@gwigz/sl-tools-ui/components"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {},
+  "rtl": false
+}

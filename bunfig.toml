@@ -1,0 +1,5 @@
+[install]
+# Hoisted (node-modules) layout: real/hardlinked files inside the project so
+# Turbopack + the React Compiler babel plugin resolve without following
+# symlinks out to Bun's global link cache.
+linker = "hoisted"
