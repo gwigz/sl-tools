@@ -15,8 +15,6 @@ const MOTION_WEIGHT = 1;
 const SEAM_THRESHOLD = 0.25;
 const START_RANGE = 2;
 const START_BIAS = 0.05;
-const STRONG_SEAM = 6;
-const OK_SEAM = 14;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -119,7 +117,6 @@ export function useAutoMatch({
         const matched: [number, number] = [startT, hi];
         ui.trim = matched;
         settings.committedTrim = matched;
-        toast.success("Found the loop");
         return;
       }
 
@@ -152,7 +149,7 @@ export function useAutoMatch({
       const base = startTimes.length;
       const motionRef = new Float32Array(raw[0].length);
 
-      let best: { start: number; end: number; cost: number; quality: number } | null = null;
+      let best: { start: number; end: number; cost: number } | null = null;
       for (let ci = 0; ci < startCands.length; ci++) {
         const { time: s, offset } = startCands[ci];
         const startRaw = raw[ci * 2];
@@ -176,12 +173,7 @@ export function useAutoMatch({
         if (!pick) continue;
         const penalized = pick.cost * (1 + START_BIAS * offset);
         if (best && penalized >= best.cost) continue;
-        best = {
-          start: s,
-          end: candTimes[pick.idx],
-          cost: penalized,
-          quality: structuralDiff(norm[base + 1 + pick.idx], startNorm) / startNorm.length,
-        };
+        best = { start: s, end: candTimes[pick.idx], cost: penalized };
       }
 
       if (!best) {
@@ -192,10 +184,6 @@ export function useAutoMatch({
       const matched: [number, number] = [best.start, clamp(best.end, best.start + minLen, hi)];
       ui.trim = matched;
       settings.committedTrim = matched;
-
-      if (best.quality < STRONG_SEAM) toast.success("Strong loop");
-      else if (best.quality < OK_SEAM) toast.success("Found a loop");
-      else toast.warning("Best effort — try ping-pong for a seamless loop");
     } catch {
       toast.error("Auto-match failed");
     } finally {
