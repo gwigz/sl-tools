@@ -150,6 +150,14 @@ export function TrimTimeline({
     [clampView, dur, gap],
   );
 
+  const panView = useCallback(
+    (deltaTime: number) => {
+      const [s, e] = ui.view;
+      setView(clampView(s + deltaTime, e - s));
+    },
+    [clampView],
+  );
+
   const zoomToSelection = useCallback(() => {
     const [s, e] = valueRef.current;
     const pad = Math.max((e - s) * 0.6, gap * 8);
@@ -163,12 +171,20 @@ export function TrimTimeline({
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const factor = Math.min(1.25, Math.max(0.8, Math.exp(e.deltaY * 0.0015)));
-      zoomToSelectionCenter(factor);
+      const horizontal = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      if (horizontal) {
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        const rect = el.getBoundingClientRect();
+        const len = ui.view[1] - ui.view[0];
+        panView((d / rect.width) * len);
+      } else {
+        const factor = Math.min(1.25, Math.max(0.8, Math.exp(e.deltaY * 0.0015)));
+        zoomToSelectionCenter(factor);
+      }
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [zoomToSelectionCenter]);
+  }, [zoomToSelectionCenter, panView]);
 
   const inFlight = useRef(false);
   const queued = useRef<number | null>(null);
