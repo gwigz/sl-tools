@@ -95,6 +95,7 @@ export function PreviewPane({
                 reverse={reverse}
                 pingPong={pingPong}
                 loop={loop}
+                regenerating={regenerating}
                 controls={
                   durationSec > 0 ? (
                     <div className="flex items-stretch gap-3">

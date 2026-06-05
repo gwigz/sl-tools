@@ -6,6 +6,7 @@ import { useSnapshot } from "valtio"
 
 import { Button } from "~/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog"
+import { Spinner } from "~/components/ui/spinner"
 import { checkerBg, cn } from "~/lib/utils"
 
 import { ui } from "./store"
@@ -135,7 +136,11 @@ function PlaybackCanvas({
   )
 }
 
-export function SlPreview({ controls, ...props }: PlaybackProps & { controls?: React.ReactNode }) {
+export function SlPreview({
+  controls,
+  regenerating,
+  ...props
+}: PlaybackProps & { controls?: React.ReactNode; regenerating: boolean }) {
   const { sheet, faceAspect } = props
   const aspectRatio = faceAspect > 0 ? faceAspect : 1
   const { previewOpen } = useSnapshot(ui)
@@ -184,6 +189,12 @@ export function SlPreview({ controls, ...props }: PlaybackProps & { controls?: R
             style={{ aspectRatio: `${aspectRatio}` }}
           >
             <PlaybackCanvas {...props} playing className="h-full w-full" />
+            {regenerating && (
+              <span className="absolute top-2 right-2 flex items-center gap-1.5 rounded-md bg-background/80 px-2 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+                <Spinner className="size-3" />
+                Updating…
+              </span>
+            )}
           </div>
           {controls}
         </DialogContent>
