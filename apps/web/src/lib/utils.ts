@@ -22,6 +22,14 @@ export function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const CHECKER_SIZE: Record<number, string> = {
+  10: "bg-[length:10px_10px]",
+  12: "bg-[length:12px_12px]",
+  16: "bg-[length:16px_16px]",
+  24: "bg-[length:24px_24px]",
+};
+
 export function checkerBg(px: number): string {
-  return `bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:${px}px_${px}px]`;
+  const size = CHECKER_SIZE[px] ?? "bg-[length:16px_16px]";
+  return `bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] ${size}`;
 }

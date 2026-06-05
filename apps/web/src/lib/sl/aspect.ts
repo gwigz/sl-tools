@@ -39,15 +39,24 @@ export function resolveAspect(state: AspectState) {
   if (state.mode === "pixels") {
     return state.pixelW > 0 && state.pixelH > 0 ? state.pixelW / state.pixelH : 1;
   }
+
   if (state.mode === "meters") {
     return state.meterW > 0 && state.meterH > 0 ? state.meterW / state.meterH : 1;
   }
-  const preset = ASPECT_PRESETS.find((p) => p.value === state.preset);
+
+  const preset = ASPECT_PRESETS.find((candidate) => candidate.value === state.preset);
+
   return preset ? preset.aspect : 1;
 }
 
 export function describeAspect(state: AspectState) {
-  if (state.mode === "pixels") return `${state.pixelW}×${state.pixelH}px`;
-  if (state.mode === "meters") return `${state.meterW}×${state.meterH}m`;
+  if (state.mode === "pixels") {
+    return `${state.pixelW}×${state.pixelH}px`;
+  }
+
+  if (state.mode === "meters") {
+    return `${state.meterW}×${state.meterH}m`;
+  }
+
   return state.preset;
 }

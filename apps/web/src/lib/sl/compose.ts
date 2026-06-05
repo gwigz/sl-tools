@@ -38,16 +38,20 @@ function drawFaceFitted(
   fit: FitMode,
   faceAspect: number,
 ) {
-  if (img.width === 0 || img.height === 0) return;
+  if (img.width === 0 || img.height === 0) {
+    return;
+  }
+
   const faceW = faceAspect > 0 ? faceAspect : 1;
   const { dx, dy, dw, dh } = fitRect(img.width, img.height, faceW, 1, fit);
-  const sx = cellW / faceW;
-  const sy = cellH;
+  const scaleX = cellW / faceW;
+  const scaleY = cellH;
+
   ctx.save();
   ctx.beginPath();
   ctx.rect(cellX, cellY, cellW, cellH);
   ctx.clip();
-  safeDrawImage(ctx, img, cellX + dx * sx, cellY + dy * sy, dw * sx, dh * sy);
+  safeDrawImage(ctx, img, cellX + dx * scaleX, cellY + dy * scaleY, dw * scaleX, dh * scaleY);
   ctx.restore();
 }
 
@@ -60,8 +64,13 @@ export function composeSheet(options: ComposeOptions) {
   const canvas = document.createElement("canvas");
   canvas.width = sheetWidth;
   canvas.height = sheetHeight;
+
   const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
+
+  if (!ctx) {
+    return canvas;
+  }
+
   ctx.imageSmoothingQuality = "high";
 
   if (background && background !== "transparent") {
@@ -70,16 +79,18 @@ export function composeSheet(options: ComposeOptions) {
   }
 
   const count = Math.min(frames.length, cols * rows);
-  for (let i = 0; i < count; i++) {
-    const cx = (i % cols) * cellW;
-    const cy = Math.floor(i / cols) * cellH;
-    drawFaceFitted(ctx, frames[i], cx, cy, cellW, cellH, fit, faceAspect);
+
+  for (let index = 0; index < count; index++) {
+    const cellX = (index % cols) * cellW;
+    const cellY = Math.floor(index / cols) * cellH;
+
+    drawFaceFitted(ctx, frames[index], cellX, cellY, cellW, cellH, fit, faceAspect);
 
     if (overlay && overlay.perCell) {
       ctx.save();
       ctx.globalAlpha = overlay.opacity;
       ctx.globalCompositeOperation = overlay.blend;
-      drawFaceFitted(ctx, overlay.bitmap, cx, cy, cellW, cellH, overlay.fit, faceAspect);
+      drawFaceFitted(ctx, overlay.bitmap, cellX, cellY, cellW, cellH, overlay.fit, faceAspect);
       ctx.restore();
     }
   }
@@ -92,6 +103,7 @@ export function composeSheet(options: ComposeOptions) {
       sheetHeight,
       overlay.fit,
     );
+
     ctx.save();
     ctx.globalAlpha = overlay.opacity;
     ctx.globalCompositeOperation = overlay.blend;

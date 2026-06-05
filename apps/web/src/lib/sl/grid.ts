@@ -4,18 +4,27 @@ export const MAX_TEXTURE_SIZE = 2048;
 
 export function nearestPow2(value: number, max = MAX_TEXTURE_SIZE) {
   let best: number = POW2_SIZES[0];
+
   for (const size of POW2_SIZES) {
-    if (size > max) break;
+    if (size > max) {
+      break;
+    }
+
     best = size;
-    if (size >= value) return size;
+
+    if (size >= value) {
+      return size;
+    }
   }
+
   return best;
 }
 
-export function autoGrid(n: number) {
-  const count = Math.max(1, Math.floor(n));
+export function autoGrid(requested: number) {
+  const count = Math.max(1, Math.floor(requested));
   const cols = Math.ceil(Math.sqrt(count));
   const rows = Math.ceil(count / cols);
+
   return { cols, rows };
 }
 
@@ -34,66 +43,78 @@ export function chooseSheet(
   maxSize: number,
   pow2: boolean,
 ) {
-  const c = Math.max(1, Math.floor(cols));
-  const r = Math.max(1, Math.floor(rows));
+  const colCount = Math.max(1, Math.floor(cols));
+  const rowCount = Math.max(1, Math.floor(rows));
   const aspect = targetAspect > 0 ? targetAspect : 1;
 
   if (!pow2) {
-    let cellWidth = maxSize / c;
+    let cellWidth = maxSize / colCount;
     let cellHeight = cellWidth / aspect;
-    if (cellHeight * r > maxSize) {
-      cellHeight = maxSize / r;
+
+    if (cellHeight * rowCount > maxSize) {
+      cellHeight = maxSize / rowCount;
       cellWidth = cellHeight * aspect;
     }
-    const sheetWidth = Math.max(1, Math.round(cellWidth * c));
-    const sheetHeight = Math.max(1, Math.round(cellHeight * r));
+
+    const sheetWidth = Math.max(1, Math.round(cellWidth * colCount));
+    const sheetHeight = Math.max(1, Math.round(cellHeight * rowCount));
+
     return {
       sheetWidth,
       sheetHeight,
-      cellWidth: sheetWidth / c,
-      cellHeight: sheetHeight / r,
-      cellAspect: sheetWidth / c / (sheetHeight / r),
+      cellWidth: sheetWidth / colCount,
+      cellHeight: sheetHeight / rowCount,
+      cellAspect: sheetWidth / colCount / (sheetHeight / rowCount),
     };
   }
 
-  const candidates = POW2_SIZES.filter((s) => s <= maxSize);
-  let best: { w: number; h: number; err: number; area: number } | null = null;
-  for (const w of candidates) {
-    for (const h of candidates) {
-      const cellAspect = w / c / (h / r);
+  const candidates = POW2_SIZES.filter((size) => size <= maxSize);
+  let best: { width: number; height: number; err: number; area: number } | null = null;
+
+  for (const width of candidates) {
+    for (const height of candidates) {
+      const cellAspect = width / colCount / (height / rowCount);
       const err = Math.abs(Math.log(cellAspect / aspect));
-      const area = w * h;
+      const area = width * height;
+
       if (
         best === null ||
         err < best.err - 0.04 ||
         (Math.abs(err - best.err) <= 0.04 && area > best.area)
       ) {
-        best = { w, h, err, area };
+        best = { width, height, err, area };
       }
     }
   }
-  const chosen = best ?? { w: maxSize, h: maxSize };
+
+  const chosen = best ?? { width: maxSize, height: maxSize };
+
   return {
-    sheetWidth: chosen.w,
-    sheetHeight: chosen.h,
-    cellWidth: chosen.w / c,
-    cellHeight: chosen.h / r,
-    cellAspect: chosen.w / c / (chosen.h / r),
+    sheetWidth: chosen.width,
+    sheetHeight: chosen.height,
+    cellWidth: chosen.width / colCount,
+    cellHeight: chosen.height / rowCount,
+    cellAspect: chosen.width / colCount / (chosen.height / rowCount),
   };
 }
 
 export function fitRect(
   iw: number,
   ih: number,
-  w: number,
-  h: number,
+  boxWidth: number,
+  boxHeight: number,
   mode: "cover" | "contain" | "stretch",
 ) {
   if (mode === "stretch" || iw <= 0 || ih <= 0) {
-    return { dx: 0, dy: 0, dw: w, dh: h };
+    return { dx: 0, dy: 0, dw: boxWidth, dh: boxHeight };
   }
-  const scale = mode === "cover" ? Math.max(w / iw, h / ih) : Math.min(w / iw, h / ih);
+
+  const scale =
+    mode === "cover"
+      ? Math.max(boxWidth / iw, boxHeight / ih)
+      : Math.min(boxWidth / iw, boxHeight / ih);
   const dw = iw * scale;
   const dh = ih * scale;
-  return { dx: (w - dw) / 2, dy: (h - dh) / 2, dw, dh };
+
+  return { dx: (boxWidth - dw) / 2, dy: (boxHeight - dh) / 2, dw, dh };
 }
