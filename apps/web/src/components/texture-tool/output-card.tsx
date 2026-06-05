@@ -1,28 +1,28 @@
-"use client";
+"use client"
 
-import { ArrowRight, ImageIcon, TriangleAlert } from "lucide-react";
-import { useSnapshot } from "valtio";
+import { ArrowRight, ImageIcon, TriangleAlert } from "lucide-react"
+import { useSnapshot } from "valtio"
 
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { ColorPicker } from "~/components/ui/color-picker";
-import { CardDivider, NumberField, SliderField, SwitchRow } from "~/components/ui/field";
-import { Label } from "~/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { ColorPicker } from "~/components/ui/color-picker"
+import { CardDivider, NumberField, SliderField, SwitchRow } from "~/components/ui/field"
+import { Label } from "~/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { type AspectState, ASPECT_PRESETS, describeAspect } from "~/lib/sl/aspect";
-import type { FitMode } from "~/lib/sl/compose";
+} from "~/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import { type AspectState, ASPECT_PRESETS, describeAspect } from "~/lib/sl/aspect"
+import type { FitMode } from "~/lib/sl/compose"
 
-import { Dropzone } from "./dropzone";
-import { settings } from "./store";
+import { Dropzone } from "./dropzone"
+import { settings } from "./store"
 
-const OVERLAY_ACCEPT = "image/*,.tga,image/tga,image/x-tga,image/targa";
-const OUTPUT_SIZES = [128, 256, 512, 1024, 2048, 4096];
+const OVERLAY_ACCEPT = "image/*,.tga,image/tga,image/x-tga,image/targa"
+const OUTPUT_SIZES = [128, 256, 512, 1024, 2048, 4096]
 
 const BLEND_MODES: { label: string; value: GlobalCompositeOperation }[] = [
   { label: "Normal", value: "source-over" },
@@ -32,7 +32,7 @@ const BLEND_MODES: { label: string; value: GlobalCompositeOperation }[] = [
   { label: "Lighten", value: "lighten" },
   { label: "Darken", value: "darken" },
   { label: "Add", value: "lighter" },
-];
+]
 
 export function OutputCard({
   faceAspect,
@@ -40,13 +40,13 @@ export function OutputCard({
   overlayName,
   onOverlay,
 }: {
-  faceAspect: number;
-  overlayBitmap: ImageBitmap | null;
-  overlayName: string | null;
-  onOverlay: (file: File) => void;
+  faceAspect: number
+  overlayBitmap: ImageBitmap | null
+  overlayName: string | null
+  onOverlay: (file: File) => void
 }) {
-  const s = useSnapshot(settings);
-  const aspect = s.aspect as AspectState;
+  const snap = useSnapshot(settings)
+  const aspect = snap.aspect as AspectState
   const {
     maxSize,
     fit,
@@ -59,7 +59,7 @@ export function OutputCard({
     overlayBlend,
     overlayFit,
     overlayPerCell,
-  } = s;
+  } = snap
 
   return (
     <Card size="sm">
@@ -73,8 +73,8 @@ export function OutputCard({
           <Label className="text-xs">Face Aspect</Label>
           <Tabs
             value={aspect.mode}
-            onValueChange={(v) =>
-              (settings.aspect = { ...settings.aspect, mode: v as AspectState["mode"] })
+            onValueChange={(value) =>
+              (settings.aspect = { ...settings.aspect, mode: value as AspectState["mode"] })
             }
           >
             <TabsList className="w-full">
@@ -93,17 +93,17 @@ export function OutputCard({
           {aspect.mode === "preset" && (
             <Select
               value={aspect.preset}
-              onValueChange={(v) =>
-                (settings.aspect = { ...settings.aspect, preset: v ?? settings.aspect.preset })
+              onValueChange={(value) =>
+                (settings.aspect = { ...settings.aspect, preset: value ?? settings.aspect.preset })
               }
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ASPECT_PRESETS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
+                {ASPECT_PRESETS.map((preset) => (
+                  <SelectItem key={preset.value} value={preset.value}>
+                    {preset.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -116,14 +116,14 @@ export function OutputCard({
                 value={aspect.pixelW}
                 min={1}
                 max={4096}
-                onChange={(v) => (settings.aspect = { ...settings.aspect, pixelW: v })}
+                onChange={(value) => (settings.aspect = { ...settings.aspect, pixelW: value })}
               />
               <NumberField
                 label="Height (px)"
                 value={aspect.pixelH}
                 min={1}
                 max={4096}
-                onChange={(v) => (settings.aspect = { ...settings.aspect, pixelH: v })}
+                onChange={(value) => (settings.aspect = { ...settings.aspect, pixelH: value })}
               />
             </div>
           )}
@@ -135,7 +135,7 @@ export function OutputCard({
                 min={0.01}
                 max={64}
                 step={0.1}
-                onChange={(v) => (settings.aspect = { ...settings.aspect, meterW: v })}
+                onChange={(value) => (settings.aspect = { ...settings.aspect, meterW: value })}
               />
               <NumberField
                 label="Height (m)"
@@ -143,7 +143,7 @@ export function OutputCard({
                 min={0.01}
                 max={64}
                 step={0.1}
-                onChange={(v) => (settings.aspect = { ...settings.aspect, meterH: v })}
+                onChange={(value) => (settings.aspect = { ...settings.aspect, meterH: value })}
               />
             </div>
           )}
@@ -159,7 +159,10 @@ export function OutputCard({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Max Size</Label>
-            <Select value={String(maxSize)} onValueChange={(v) => (settings.maxSize = Number(v))}>
+            <Select
+              value={String(maxSize)}
+              onValueChange={(value) => (settings.maxSize = Number(value))}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -174,7 +177,7 @@ export function OutputCard({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Frame Fit</Label>
-            <Select value={fit} onValueChange={(v) => (settings.fit = v as FitMode)}>
+            <Select value={fit} onValueChange={(value) => (settings.fit = value as FitMode)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -196,23 +199,27 @@ export function OutputCard({
           label="Power-of-Two"
           hint="Required for Second Life, sizes 8 to 2048, can be non-square"
           checked={pow2}
-          onChange={(v) => (settings.pow2 = v)}
+          onChange={(value) => (settings.pow2 = value)}
         />
         <SwitchRow
           label="Stretch Grid"
           hint="Store frames in square cells for extra resolution; SL stretches them back to the face"
           checked={stretchGrid}
-          onChange={(v) => (settings.stretchGrid = v)}
+          onChange={(value) => (settings.stretchGrid = value)}
         />
         <SwitchRow
           label="Transparent Background"
           checked={transparent}
-          onChange={(v) => (settings.transparent = v)}
+          onChange={(value) => (settings.transparent = value)}
         />
         {!transparent && (
           <div className="flex items-center justify-between gap-3">
             <Label className="text-xs">Background Color</Label>
-            <ColorPicker value={background} onChange={(v) => (settings.background = v)} alpha />
+            <ColorPicker
+              value={background}
+              onChange={(value) => (settings.background = value)}
+              alpha
+            />
           </div>
         )}
 
@@ -222,7 +229,7 @@ export function OutputCard({
           label="Overlay Texture"
           hint="Composite an image on top of every frame"
           checked={overlayEnabled}
-          onChange={(v) => (settings.overlayEnabled = v)}
+          onChange={(value) => (settings.overlayEnabled = value)}
         />
         {overlayEnabled && (
           <>
@@ -239,7 +246,7 @@ export function OutputCard({
               min={0}
               max={100}
               step={1}
-              onChange={(v) => (settings.overlayOpacity = v / 100)}
+              onChange={(value) => (settings.overlayOpacity = value / 100)}
               suffix="%"
             />
             <div className="grid grid-cols-2 gap-3">
@@ -247,15 +254,17 @@ export function OutputCard({
                 <Label className="text-xs">Blend</Label>
                 <Select
                   value={overlayBlend}
-                  onValueChange={(v) => (settings.overlayBlend = v as GlobalCompositeOperation)}
+                  onValueChange={(value) =>
+                    (settings.overlayBlend = value as GlobalCompositeOperation)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {BLEND_MODES.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
+                    {BLEND_MODES.map((mode) => (
+                      <SelectItem key={mode.value} value={mode.value}>
+                        {mode.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -265,7 +274,7 @@ export function OutputCard({
                 <Label className="text-xs">Fit</Label>
                 <Select
                   value={overlayFit}
-                  onValueChange={(v) => (settings.overlayFit = v as FitMode)}
+                  onValueChange={(value) => (settings.overlayFit = value as FitMode)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -282,11 +291,11 @@ export function OutputCard({
               label="Apply Per Frame"
               hint="Draw on each cell instead of the whole sheet"
               checked={overlayPerCell}
-              onChange={(v) => (settings.overlayPerCell = v)}
+              onChange={(value) => (settings.overlayPerCell = value)}
             />
           </>
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

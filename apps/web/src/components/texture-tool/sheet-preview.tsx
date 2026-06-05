@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import { Expand } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Expand } from "lucide-react"
+import { useEffect, useRef } from "react"
 
-import { Button } from "~/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
-import { checkerBg, cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog"
+import { checkerBg, cn } from "~/lib/utils"
 
 function SheetView({
   sheet,
@@ -13,23 +13,32 @@ function SheetView({
   rows,
   className,
 }: {
-  sheet: HTMLCanvasElement | null;
-  cols: number;
-  rows: number;
-  className?: string;
+  sheet: HTMLCanvasElement | null
+  cols: number
+  rows: number
+  className?: string
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !sheet) return;
-    canvas.width = sheet.width;
-    canvas.height = sheet.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(sheet, 0, 0);
-  }, [sheet]);
+    const canvas = canvasRef.current
+
+    if (!canvas || !sheet) {
+      return
+    }
+
+    canvas.width = sheet.width
+    canvas.height = sheet.height
+
+    const ctx = canvas.getContext("2d")
+
+    if (!ctx) {
+      return
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(sheet, 0, 0)
+  }, [sheet])
 
   return (
     <div className={cn("relative overflow-hidden rounded-md border", checkerBg(16), className)}>
@@ -43,8 +52,8 @@ function SheetView({
               gridTemplateRows: `repeat(${rows}, 1fr)`,
             }}
           >
-            {Array.from({ length: cols * rows }, (_, i) => (
-              <div key={i} className="border border-primary/25" />
+            {Array.from({ length: cols * rows }, (_, index) => (
+              <div key={index} className="border border-primary/25" />
             ))}
           </div>
         </>
@@ -54,7 +63,7 @@ function SheetView({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function SheetPreview({
@@ -62,9 +71,9 @@ export function SheetPreview({
   cols,
   rows,
 }: {
-  sheet: HTMLCanvasElement | null;
-  cols: number;
-  rows: number;
+  sheet: HTMLCanvasElement | null
+  cols: number
+  rows: number
 }) {
   return (
     <Dialog>
@@ -90,5 +99,5 @@ export function SheetPreview({
         <SheetView sheet={sheet} cols={cols} rows={rows} />
       </DialogContent>
     </Dialog>
-  );
+  )
 }

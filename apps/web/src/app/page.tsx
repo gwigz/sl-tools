@@ -1,6 +1,6 @@
-import { SiGithub } from "react-icons/si";
+import { SiGithub } from "react-icons/si"
 
-import { TextureTool } from "~/components/texture-tool/texture-tool";
+import { TextureTool } from "~/components/texture-tool/texture-tool"
 
 export default function Home() {
   return (
@@ -17,5 +17,5 @@ export default function Home() {
         </a>
       </footer>
     </main>
-  );
+  )
 }

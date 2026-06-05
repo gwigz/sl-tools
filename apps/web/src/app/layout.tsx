@@ -1,32 +1,32 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import type { Metadata } from "next"
+import { Geist, Geist_Mono, Inter } from "next/font/google"
 
-import "../index.css";
-import Providers from "~/components/providers";
-import { cn } from "@gwigz/sl-tools-ui/lib/utils";
+import "../index.css"
+import Providers from "~/components/providers"
+import { cn } from "@gwigz/sl-tools-ui/lib/utils"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-});
+})
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
   title: "Media to llSetTextureAnim",
   description:
     "Turn a video or GIF into a Second Life texture-animation sheet with a ready-to-paste llSetTextureAnim script.",
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={cn("dark font-sans", inter.variable)}>
@@ -34,5 +34,5 @@ export default function RootLayout({
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

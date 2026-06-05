@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
-import { cva, type VariantProps } from "class-variance-authority";
+import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
+import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "~/lib/utils";
+import { cn } from "~/lib/utils"
 
 function Tabs({ className, orientation = "horizontal", ...props }: TabsPrimitive.Root.Props) {
   return (
@@ -13,7 +13,7 @@ function Tabs({ className, orientation = "horizontal", ...props }: TabsPrimitive
       className={cn("group/tabs flex gap-2 data-horizontal:flex-col", className)}
       {...props}
     />
-  );
+  )
 }
 
 const tabsListVariants = cva(
@@ -29,7 +29,7 @@ const tabsListVariants = cva(
       variant: "default",
     },
   },
-);
+)
 
 function TabsList({
   className,
@@ -43,7 +43,7 @@ function TabsList({
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
     />
-  );
+  )
 }
 
 function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
@@ -59,7 +59,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
@@ -69,7 +69,7 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
       className={cn("flex-1 text-xs/relaxed outline-none", className)}
       {...props}
     />
-  );
+  )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };
+export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }

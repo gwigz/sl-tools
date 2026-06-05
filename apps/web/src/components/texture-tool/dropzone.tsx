@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import { FileVideo, Upload } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { FileVideo, Upload } from "lucide-react"
+import { useCallback, useRef, useState } from "react"
 
-import { ScaledCanvasBitmap } from "~/components/ui/canvas-bitmap";
-import { checkerBg, cn } from "~/lib/utils";
+import { ScaledCanvasBitmap } from "~/components/ui/canvas-bitmap"
+import { checkerBg, cn } from "~/lib/utils"
 
-const DEFAULT_ACCEPT = "video/*,image/gif,image/webp,image/apng,image/png,image/*";
+const DEFAULT_ACCEPT = "video/*,image/gif,image/webp,image/apng,image/png,image/*"
 
 export function Dropzone({
   onSelect,
@@ -15,34 +15,37 @@ export function Dropzone({
   preview = null,
   label,
 }: {
-  onSelect: (file: File) => void;
-  compact?: boolean;
-  accept?: string;
-  preview?: ImageBitmap | null;
-  label?: string;
+  onSelect: (file: File) => void
+  compact?: boolean
+  accept?: string
+  preview?: ImageBitmap | null
+  label?: string
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
-      const file = files?.[0];
-      if (file) onSelect(file);
+      const file = files?.[0]
+
+      if (file) {
+        onSelect(file)
+      }
     },
     [onSelect],
-  );
+  )
 
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
+      onDragOver={(event) => {
+        event.preventDefault()
+        setDragging(true)
       }}
       onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        handleFiles(e.dataTransfer.files);
+      onDrop={(event) => {
+        event.preventDefault()
+        setDragging(false)
+        handleFiles(event.dataTransfer.files)
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
@@ -57,7 +60,7 @@ export function Dropzone({
         type="file"
         accept={accept}
         className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(event) => handleFiles(event.target.files)}
       />
 
       {compact && preview ? (
@@ -87,7 +90,7 @@ export function Dropzone({
         </p>
       </div>
     </div>
-  );
+  )
 }
 
 function Thumbnail({ bitmap }: { bitmap: ImageBitmap }) {
@@ -100,5 +103,5 @@ function Thumbnail({ bitmap }: { bitmap: ImageBitmap }) {
     >
       <ScaledCanvasBitmap bitmap={bitmap} size={44} className="max-h-full max-w-full" />
     </div>
-  );
+  )
 }

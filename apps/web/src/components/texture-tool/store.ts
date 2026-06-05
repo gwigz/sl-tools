@@ -1,8 +1,8 @@
-import { proxy } from "valtio";
+import { proxy } from "valtio"
 
-import { type AspectState, DEFAULT_ASPECT } from "~/lib/sl/aspect";
-import type { FitMode } from "~/lib/sl/compose";
-import type { ScriptLanguage } from "~/lib/sl/lsl";
+import { type AspectState, DEFAULT_ASPECT } from "~/lib/sl/aspect"
+import type { FitMode } from "~/lib/sl/compose"
+import type { ScriptLanguage } from "~/lib/sl/lsl"
 
 export const DEFAULT_SETTINGS = {
   fps: 10,
@@ -28,12 +28,12 @@ export const DEFAULT_SETTINGS = {
   linkNum: 2,
   faceAll: true,
   faceNum: 0,
-};
+}
 
-export type Settings = typeof DEFAULT_SETTINGS;
+export type Settings = typeof DEFAULT_SETTINGS
 
 /** Keys of `settings` that persist to localStorage (the rest are undo-only). */
-export const PERSISTED_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
+export const PERSISTED_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]
 
 // Serializable, undoable settings. `committedTrim`/`frameCount`/`aspect` are
 // undoable but not persisted (they derive from the loaded source).
@@ -42,9 +42,9 @@ export const settings = proxy({
   frameCount: 16,
   committedTrim: [0, 0] as [number, number],
   aspect: { ...DEFAULT_ASPECT } as AspectState,
-});
+})
 
-export type SettingsState = typeof settings;
+export type SettingsState = typeof settings
 
 // Ephemeral UI / view state, not persisted, not undone.
 export const ui = proxy({
@@ -52,4 +52,4 @@ export const ui = proxy({
   previewOpen: false,
   resetOpen: false,
   trim: [0, 0] as [number, number],
-});
+})

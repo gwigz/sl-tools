@@ -1,34 +1,34 @@
-"use client";
+"use client"
 
-import { RotateCcw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useSnapshot } from "valtio";
+import { RotateCcw } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
+import { useSnapshot } from "valtio"
 
-import { Button } from "~/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "~/components/ui/dialog";
-import { useAutoMatch } from "~/hooks/use-auto-match";
-import { useFrameExtraction } from "~/hooks/use-frame-extraction";
-import { useOverlay } from "~/hooks/use-overlay";
-import { useSettingsPersistence } from "~/hooks/use-settings-persistence";
-import { useUndoRedo } from "~/hooks/use-undo-redo";
-import { type AspectState, resolveAspect } from "~/lib/sl/aspect";
-import { canvasToBlob, composeSheet, type OverlayOptions } from "~/lib/sl/compose";
-import { autoGrid, chooseSheet } from "~/lib/sl/grid";
-import { buildScript } from "~/lib/sl/lsl";
+import { Button } from "~/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "~/components/ui/dialog"
+import { useAutoMatch } from "~/hooks/use-auto-match"
+import { useFrameExtraction } from "~/hooks/use-frame-extraction"
+import { useOverlay } from "~/hooks/use-overlay"
+import { useSettingsPersistence } from "~/hooks/use-settings-persistence"
+import { useUndoRedo } from "~/hooks/use-undo-redo"
+import { type AspectState, resolveAspect } from "~/lib/sl/aspect"
+import { canvasToBlob, composeSheet, type OverlayOptions } from "~/lib/sl/compose"
+import { autoGrid, chooseSheet } from "~/lib/sl/grid"
+import { buildScript } from "~/lib/sl/lsl"
 
-import { ApplyCard } from "./apply-card";
-import { FramesGridCard } from "./frames-grid-card";
-import { OutputCard } from "./output-card";
-import { PreviewPane } from "./preview-pane";
-import { SourceCard } from "./source-card";
-import { settings, ui } from "./store";
+import { ApplyCard } from "./apply-card"
+import { FramesGridCard } from "./frames-grid-card"
+import { OutputCard } from "./output-card"
+import { PreviewPane } from "./preview-pane"
+import { SourceCard } from "./source-card"
+import { settings, ui } from "./store"
 
 export function TextureTool() {
-  const [sheet, setSheet] = useState<HTMLCanvasElement | null>(null);
-  const [pngSize, setPngSize] = useState<number | null>(null);
+  const [sheet, setSheet] = useState<HTMLCanvasElement | null>(null)
+  const [pngSize, setPngSize] = useState<number | null>(null)
 
-  const s = useSnapshot(settings);
+  const snap = useSnapshot(settings)
   const {
     fps,
     frameCount,
@@ -54,30 +54,33 @@ export function TextureTool() {
     linkNum,
     faceAll,
     faceNum,
-  } = s;
-  const aspect = s.aspect as AspectState;
-  const uiSnap = useSnapshot(ui);
-  const trim = uiSnap.trim as [number, number];
-  const resetOpen = uiSnap.resetOpen;
+  } = snap
+  const aspect = snap.aspect as AspectState
+  const uiSnap = useSnapshot(ui)
+  const trim = uiSnap.trim as [number, number]
+  const resetOpen = uiSnap.resetOpen
 
-  const faceAspect = resolveAspect(aspect);
+  const faceAspect = resolveAspect(aspect)
 
   const { cols, rows } = useMemo(() => {
-    if (autoGridOn) return autoGrid(frameCount);
-    return { cols: Math.max(1, manualCols), rows: Math.max(1, manualRows) };
-  }, [autoGridOn, frameCount, manualCols, manualRows]);
+    if (autoGridOn) {
+      return autoGrid(frameCount)
+    }
+
+    return { cols: Math.max(1, manualCols), rows: Math.max(1, manualRows) }
+  }, [autoGridOn, frameCount, manualCols, manualRows])
 
   const sheetDims = useMemo(
     () => chooseSheet(cols, rows, stretchGrid ? 1 : faceAspect, maxSize, pow2),
     [cols, rows, faceAspect, maxSize, pow2, stretchGrid],
-  );
+  )
 
-  const cellCapacity = cols * rows;
-  const targetFrames = autoGridOn ? frameCount : cellCapacity;
-  const placedFrames = Math.min(targetFrames, cellCapacity);
+  const cellCapacity = cols * rows
+  const targetFrames = autoGridOn ? frameCount : cellCapacity
+  const placedFrames = Math.min(targetFrames, cellCapacity)
 
-  const { hydrated, resetSettings } = useSettingsPersistence();
-  const { overlayBitmap, overlayName, handleOverlay, resetOverlay } = useOverlay(hydrated);
+  const { hydrated, resetSettings } = useSettingsPersistence()
+  const { overlayBitmap, overlayName, handleOverlay, resetOverlay } = useOverlay(hydrated)
   const {
     sampler,
     meta,
@@ -92,38 +95,38 @@ export function TextureTool() {
     frameStep,
     handleSelect,
     requestFrame,
-  } = useFrameExtraction({ targetFrames });
+  } = useFrameExtraction({ targetFrames })
   const { autoMatching, handleAutoMatch } = useAutoMatch({
     sampler,
     durationSec,
     frameStep,
     framesLength: frames.length,
     fps,
-  });
-  useUndoRedo(hydrated);
+  })
+  useUndoRedo(hydrated)
 
-  const regenerating = extracting || loadingSource;
-  const trimLength = trim[1] - trim[0];
-  const loopLength = fps > 0 ? placedFrames / fps : 0;
+  const regenerating = extracting || loadingSource
+  const trimLength = trim[1] - trim[0]
+  const loopLength = fps > 0 ? placedFrames / fps : 0
   const matchedFps =
-    trimLength > 0 ? Math.min(60, Math.max(1, Math.round(placedFrames / trimLength))) : fps;
+    trimLength > 0 ? Math.min(60, Math.max(1, Math.round(placedFrames / trimLength))) : fps
 
   const commitTrim = useCallback((next: [number, number]) => {
-    ui.trim = next;
-    settings.committedTrim = next;
-  }, []);
+    ui.trim = next
+    settings.committedTrim = next
+  }, [])
 
   const handleReset = useCallback(() => {
-    resetSettings();
-    resetOverlay();
-    ui.resetOpen = false;
-    toast.success("Settings reset to defaults");
-  }, [resetSettings, resetOverlay]);
+    resetSettings()
+    resetOverlay()
+    ui.resetOpen = false
+    toast.success("Settings reset to defaults")
+  }, [resetSettings, resetOverlay])
 
   useEffect(() => {
     if (frames.length === 0) {
-      setSheet(null);
-      return;
+      setSheet(null)
+      return
     }
     const overlay: OverlayOptions | null =
       overlayEnabled && overlayBitmap
@@ -134,7 +137,7 @@ export function TextureTool() {
             fit: overlayFit,
             perCell: overlayPerCell,
           }
-        : null;
+        : null
 
     setSheet(
       composeSheet({
@@ -148,7 +151,7 @@ export function TextureTool() {
         background: transparent ? "transparent" : background,
         overlay,
       }),
-    );
+    )
   }, [
     frames,
     cols,
@@ -165,10 +168,10 @@ export function TextureTool() {
     overlayBlend,
     overlayFit,
     overlayPerCell,
-  ]);
+  ])
 
-  const link = linkMode === "this" ? null : linkMode === "specific" ? String(linkNum) : linkMode;
-  const face = faceAll ? "ALL_SIDES" : String(faceNum);
+  const link = linkMode === "this" ? null : linkMode === "specific" ? String(linkNum) : linkMode
+  const face = faceAll ? "ALL_SIDES" : String(faceNum)
 
   const script = useMemo(
     () =>
@@ -184,46 +187,54 @@ export function TextureTool() {
         link,
       }),
     [scriptLang, cols, rows, fps, placedFrames, loop, reverse, pingPong, face, link],
-  );
+  )
 
-  const baseName = meta?.name.replace(/\.[^.]+$/, "") ?? "texture";
+  const baseName = meta?.name.replace(/\.[^.]+$/, "") ?? "texture"
 
   useEffect(() => {
     if (!sheet) {
-      setPngSize(null);
-      return;
+      setPngSize(null)
+      return
     }
-    let cancelled = false;
-    const id = setTimeout(() => {
+
+    let cancelled = false
+
+    const timer = setTimeout(() => {
       canvasToBlob(sheet)
         .then((blob) => {
-          if (!cancelled) setPngSize(blob.size);
+          if (!cancelled) {
+            setPngSize(blob.size)
+          }
         })
-        .catch(() => {});
-    }, 350);
+        .catch(() => {})
+    }, 350)
+
     return () => {
-      cancelled = true;
-      clearTimeout(id);
-    };
-  }, [sheet]);
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [sheet])
 
   const handleDownload = useCallback(async () => {
-    if (!sheet) return;
-    const blob = await canvasToBlob(sheet);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${baseName}_${cols}x${rows}_${fps}fps.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [sheet, baseName, cols, rows, fps]);
+    if (!sheet) {
+      return
+    }
+
+    const blob = await canvasToBlob(sheet)
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = `${baseName}_${cols}x${rows}_${fps}fps.png`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }, [sheet, baseName, cols, rows, fps])
 
   const copyScript = useCallback(() => {
     navigator.clipboard
       .writeText(script)
       .then(() => toast.success("Script copied"))
-      .catch(() => toast.error("Clipboard unavailable"));
-  }, [script]);
+      .catch(() => toast.error("Clipboard unavailable"))
+  }, [script])
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)] lg:items-start">
@@ -288,7 +299,7 @@ export function TextureTool() {
         <ApplyCard script={script} onCopy={copyScript} />
       </div>
 
-      <Dialog open={resetOpen} onOpenChange={(v) => (ui.resetOpen = v)}>
+      <Dialog open={resetOpen} onOpenChange={(open) => (ui.resetOpen = open)}>
         <DialogContent className="max-w-sm">
           <DialogTitle>Reset all settings?</DialogTitle>
           <DialogDescription>
@@ -332,5 +343,5 @@ export function TextureTool() {
         onCopy={copyScript}
       />
     </div>
-  );
+  )
 }

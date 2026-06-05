@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { Grid3x3, Wand2 } from "lucide-react";
-import { useSnapshot } from "valtio";
+import { Grid3x3, Wand2 } from "lucide-react"
+import { useSnapshot } from "valtio"
 
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { CardDivider, NumberField, SliderField, SwitchRow } from "~/components/ui/field";
-import { Label } from "~/components/ui/label";
-import { formatClock } from "~/lib/utils";
+import { Button } from "~/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { CardDivider, NumberField, SliderField, SwitchRow } from "~/components/ui/field"
+import { Label } from "~/components/ui/label"
+import { formatClock } from "~/lib/utils"
 
-import { LoopSeam } from "./loop-seam";
-import type { SourceMeta } from "~/hooks/use-frame-extraction";
-import { settings, ui } from "./store";
-import { type TimelineThumb, TrimTimeline } from "./trim-timeline";
+import { LoopSeam } from "./loop-seam"
+import type { SourceMeta } from "~/hooks/use-frame-extraction"
+import { settings, ui } from "./store"
+import { type TimelineThumb, TrimTimeline } from "./trim-timeline"
 
-const MAX_FRAMES = 256;
+const MAX_FRAMES = 256
 
 export function FramesGridCard({
   meta,
@@ -39,31 +39,31 @@ export function FramesGridCard({
   onAutoMatch,
   requestFrame,
 }: {
-  meta: SourceMeta | null;
-  durationSec: number;
-  trimLength: number;
-  loopLength: number;
-  matchedFps: number;
-  frames: ImageBitmap[];
-  inFrame: ImageBitmap | null;
-  outFrame: ImageBitmap | null;
-  faceAspect: number;
-  extracting: boolean;
-  autoMatching: boolean;
-  timelineThumbs: TimelineThumb[];
-  frameStep: number;
-  cols: number;
-  rows: number;
-  cellCapacity: number;
-  placedFrames: number;
-  sheetDims: { sheetWidth: number; sheetHeight: number };
-  onCommitTrim: (value: [number, number]) => void;
-  onAutoMatch: () => void;
-  requestFrame: (timeSec: number) => Promise<ImageBitmap | null>;
+  meta: SourceMeta | null
+  durationSec: number
+  trimLength: number
+  loopLength: number
+  matchedFps: number
+  frames: ImageBitmap[]
+  inFrame: ImageBitmap | null
+  outFrame: ImageBitmap | null
+  faceAspect: number
+  extracting: boolean
+  autoMatching: boolean
+  timelineThumbs: TimelineThumb[]
+  frameStep: number
+  cols: number
+  rows: number
+  cellCapacity: number
+  placedFrames: number
+  sheetDims: { sheetWidth: number; sheetHeight: number }
+  onCommitTrim: (value: [number, number]) => void
+  onAutoMatch: () => void
+  requestFrame: (timeSec: number) => Promise<ImageBitmap | null>
 }) {
   const { autoGridOn, frameCount, fps, manualCols, manualRows, loop, reverse, pingPong } =
-    useSnapshot(settings);
-  const trim = useSnapshot(ui).trim as [number, number];
+    useSnapshot(settings)
+  const trim = useSnapshot(ui).trim as [number, number]
 
   return (
     <Card size="sm">
@@ -80,7 +80,7 @@ export function FramesGridCard({
             min={1}
             max={MAX_FRAMES}
             step={1}
-            onChange={(v) => (settings.frameCount = v)}
+            onChange={(value) => (settings.frameCount = value)}
           />
         ) : (
           <div className="flex items-center justify-between text-xs">
@@ -96,7 +96,7 @@ export function FramesGridCard({
           min={1}
           max={60}
           step={1}
-          onChange={(v) => (settings.fps = v)}
+          onChange={(value) => (settings.fps = value)}
           suffix="fps"
         />
         {meta && durationSec > 0 && trimLength > 0 && (
@@ -129,7 +129,7 @@ export function FramesGridCard({
                 thumbs={timelineThumbs}
                 value={trim}
                 frameStep={frameStep}
-                onChange={(v) => (ui.trim = v)}
+                onChange={(value) => (ui.trim = value)}
                 onCommit={onCommitTrim}
                 requestFrame={requestFrame}
               />
@@ -145,7 +145,7 @@ export function FramesGridCard({
                   onAutoMatch={onAutoMatch}
                   autoMatching={autoMatching}
                   onExpand={() => {
-                    ui.previewOpen = true;
+                    ui.previewOpen = true
                   }}
                 />
               )}
@@ -158,17 +158,22 @@ export function FramesGridCard({
         <div className="flex flex-col gap-2">
           <Label className="text-xs">Script Settings</Label>
           <div className="flex flex-wrap gap-4">
-            <SwitchRow label="Loop" checked={loop} onChange={(v) => (settings.loop = v)} inline />
+            <SwitchRow
+              label="Loop"
+              checked={loop}
+              onChange={(value) => (settings.loop = value)}
+              inline
+            />
             <SwitchRow
               label="Reverse"
               checked={reverse}
-              onChange={(v) => (settings.reverse = v)}
+              onChange={(value) => (settings.reverse = value)}
               inline
             />
             <SwitchRow
               label="Ping-Pong"
               checked={pingPong}
-              onChange={(v) => (settings.pingPong = v)}
+              onChange={(value) => (settings.pingPong = value)}
               inline
             />
           </div>
@@ -180,7 +185,7 @@ export function FramesGridCard({
           label="Auto Grid"
           hint="Choose rows and columns automatically"
           checked={autoGridOn}
-          onChange={(v) => (settings.autoGridOn = v)}
+          onChange={(value) => (settings.autoGridOn = value)}
         />
         {!autoGridOn && (
           <div className="grid grid-cols-2 gap-3">
@@ -189,14 +194,14 @@ export function FramesGridCard({
               value={manualCols}
               min={1}
               max={255}
-              onChange={(v) => (settings.manualCols = v)}
+              onChange={(value) => (settings.manualCols = value)}
             />
             <NumberField
               label="Rows"
               value={manualRows}
               min={1}
               max={255}
-              onChange={(v) => (settings.manualRows = v)}
+              onChange={(value) => (settings.manualRows = value)}
             />
           </div>
         )}
@@ -210,5 +215,5 @@ export function FramesGridCard({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

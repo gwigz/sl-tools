@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { Box, Copy } from "lucide-react";
-import { useSnapshot } from "valtio";
+import { Box, Copy } from "lucide-react"
+import { useSnapshot } from "valtio"
 
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { NumberField } from "~/components/ui/field";
-import { Label } from "~/components/ui/label";
+import { Button } from "~/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { NumberField } from "~/components/ui/field"
+import { Label } from "~/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { ScriptLanguage } from "~/lib/sl/lsl";
+} from "~/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import type { ScriptLanguage } from "~/lib/sl/lsl"
 
-import { ScriptBlock } from "./script-block";
-import { settings } from "./store";
+import { ScriptBlock } from "./script-block"
+import { settings } from "./store"
 
 const LINK_TARGETS = [
   { value: "this", label: "This prim" },
@@ -27,10 +27,10 @@ const LINK_TARGETS = [
   { value: "LINK_ALL_CHILDREN", label: "All children" },
   { value: "LINK_ALL_OTHERS", label: "All other prims" },
   { value: "specific", label: "Specific link #" },
-];
+]
 
 export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => void }) {
-  const { scriptLang, linkMode, linkNum, faceAll, faceNum } = useSnapshot(settings);
+  const { scriptLang, linkMode, linkNum, faceAll, faceNum } = useSnapshot(settings)
 
   return (
     <Card size="sm">
@@ -43,7 +43,7 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
         <div className="flex items-center justify-between gap-2">
           <Tabs
             value={scriptLang}
-            onValueChange={(v) => (settings.scriptLang = v as ScriptLanguage)}
+            onValueChange={(value) => (settings.scriptLang = value as ScriptLanguage)}
           >
             <TabsList>
               <TabsTrigger value="lsl">LSL</TabsTrigger>
@@ -57,14 +57,17 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Target Link</Label>
-            <Select value={linkMode} onValueChange={(v) => (settings.linkMode = v ?? "this")}>
+            <Select
+              value={linkMode}
+              onValueChange={(value) => (settings.linkMode = value ?? "this")}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LINK_TARGETS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                {LINK_TARGETS.map((target) => (
+                  <SelectItem key={target.value} value={target.value}>
+                    {target.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -74,7 +77,7 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
             <Label className="text-xs">Face</Label>
             <Select
               value={faceAll ? "all" : "specific"}
-              onValueChange={(v) => (settings.faceAll = v === "all")}
+              onValueChange={(value) => (settings.faceAll = value === "all")}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -94,7 +97,7 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
                 value={linkNum}
                 min={1}
                 max={255}
-                onChange={(v) => (settings.linkNum = v)}
+                onChange={(value) => (settings.linkNum = value)}
               />
             ) : (
               <span />
@@ -105,7 +108,7 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
                 value={faceNum}
                 min={0}
                 max={8}
-                onChange={(v) => (settings.faceNum = v)}
+                onChange={(value) => (settings.faceNum = value)}
               />
             ) : (
               <span />
@@ -119,5 +122,5 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
         </p>
       </CardContent>
     </Card>
-  );
+  )
 }

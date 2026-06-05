@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { X } from "lucide-react";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { X } from "lucide-react"
 
-import { cn } from "~/lib/utils";
+import { cn } from "~/lib/utils"
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
 function DialogContent({
@@ -49,7 +49,7 @@ function DialogContent({
         )}
       </DialogPrimitive.Popup>
     </DialogPrimitive.Portal>
-  );
+  )
 }
 
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
@@ -59,7 +59,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
       className={cn("font-semibold text-sm leading-none tracking-tight", className)}
       {...props}
     />
-  );
+  )
 }
 
 function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
@@ -69,7 +69,7 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
       className={cn("text-muted-foreground text-xs", className)}
       {...props}
     />
-  );
+  )
 }
 
-export { Dialog, DialogTrigger, DialogClose, DialogContent, DialogTitle, DialogDescription };
+export { Dialog, DialogTrigger, DialogClose, DialogContent, DialogTitle, DialogDescription }

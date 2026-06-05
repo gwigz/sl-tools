@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import { Copy, Download, TriangleAlert } from "lucide-react";
-import { useSnapshot } from "valtio";
+import { Copy, Download, TriangleAlert } from "lucide-react"
+import { useSnapshot } from "valtio"
 
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader } from "~/components/ui/card";
-import { CardDivider } from "~/components/ui/field";
-import { Spinner } from "~/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { SourceMeta } from "~/hooks/use-frame-extraction";
-import { formatBytes } from "~/lib/utils";
+import { Button } from "~/components/ui/button"
+import { Card, CardContent, CardHeader } from "~/components/ui/card"
+import { CardDivider } from "~/components/ui/field"
+import { Spinner } from "~/components/ui/spinner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import type { SourceMeta } from "~/hooks/use-frame-extraction"
+import { formatBytes } from "~/lib/utils"
 
-import { SeamFrame } from "./loop-seam";
-import { SheetPreview } from "./sheet-preview";
-import { SlPreview } from "./sl-preview";
-import { settings, ui } from "./store";
-import { type TimelineThumb, TrimTimeline } from "./trim-timeline";
+import { SeamFrame } from "./loop-seam"
+import { SheetPreview } from "./sheet-preview"
+import { SlPreview } from "./sl-preview"
+import { settings, ui } from "./store"
+import { type TimelineThumb, TrimTimeline } from "./trim-timeline"
 
 export function PreviewPane({
   sheet,
@@ -42,32 +42,32 @@ export function PreviewPane({
   onDownload,
   onCopy,
 }: {
-  sheet: HTMLCanvasElement | null;
-  cols: number;
-  rows: number;
-  placedFrames: number;
-  faceAspect: number;
-  durationSec: number;
-  frames: ImageBitmap[];
-  inFrame: ImageBitmap | null;
-  outFrame: ImageBitmap | null;
-  timelineThumbs: TimelineThumb[];
-  frameStep: number;
-  sheetDims: { sheetWidth: number; sheetHeight: number };
-  pngSize: number | null;
-  regenerating: boolean;
-  meta: SourceMeta | null;
-  trimLength: number;
-  matchedFps: number;
-  extracting: boolean;
-  progress: number;
-  onCommitTrim: (value: [number, number]) => void;
-  requestFrame: (timeSec: number) => Promise<ImageBitmap | null>;
-  onDownload: () => void;
-  onCopy: () => void;
+  sheet: HTMLCanvasElement | null
+  cols: number
+  rows: number
+  placedFrames: number
+  faceAspect: number
+  durationSec: number
+  frames: ImageBitmap[]
+  inFrame: ImageBitmap | null
+  outFrame: ImageBitmap | null
+  timelineThumbs: TimelineThumb[]
+  frameStep: number
+  sheetDims: { sheetWidth: number; sheetHeight: number }
+  pngSize: number | null
+  regenerating: boolean
+  meta: SourceMeta | null
+  trimLength: number
+  matchedFps: number
+  extracting: boolean
+  progress: number
+  onCommitTrim: (value: [number, number]) => void
+  requestFrame: (timeSec: number) => Promise<ImageBitmap | null>
+  onDownload: () => void
+  onCopy: () => void
 }) {
-  const { fps, reverse, pingPong, loop } = useSnapshot(settings);
-  const trim = useSnapshot(ui).trim as [number, number];
+  const { fps, reverse, pingPong, loop } = useSnapshot(settings)
+  const trim = useSnapshot(ui).trim as [number, number]
 
   return (
     <div className="flex flex-col gap-3 lg:sticky lg:top-4">
@@ -109,7 +109,7 @@ export function PreviewPane({
                           thumbs={timelineThumbs}
                           value={trim}
                           frameStep={frameStep}
-                          onChange={(v) => (ui.trim = v)}
+                          onChange={(value) => (ui.trim = value)}
                           onCommit={onCommitTrim}
                           requestFrame={requestFrame}
                         />
@@ -174,5 +174,5 @@ export function PreviewPane({
         </Tabs>
       </Card>
     </div>
-  );
+  )
 }

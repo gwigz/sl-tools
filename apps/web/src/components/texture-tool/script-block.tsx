@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useMemo } from "react";
+import { useMemo } from "react"
 
-type TokenType = "plain" | "comment" | "string" | "const" | "keyword" | "func" | "number";
+type TokenType = "plain" | "comment" | "string" | "const" | "keyword" | "func" | "number"
 
 const TOKEN_RE = new RegExp(
   [
@@ -14,7 +14,7 @@ const TOKEN_RE = new RegExp(
     String.raw`(\d+\.?\d*)`, // 6 number
   ].join("|"),
   "g",
-);
+)
 
 const COLORS: Record<TokenType, string> = {
   plain: "",
@@ -24,42 +24,56 @@ const COLORS: Record<TokenType, string> = {
   keyword: "text-violet-600 dark:text-violet-400",
   func: "text-blue-600 dark:text-blue-400",
   number: "text-amber-600 dark:text-amber-400",
-};
+}
 
 function tokenize(src: string) {
-  const tokens: { type: TokenType; value: string }[] = [];
-  let last = 0;
-  TOKEN_RE.lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const tokens: { type: TokenType; value: string }[] = []
+  let last = 0
+  TOKEN_RE.lastIndex = 0
+  let match: RegExpExecArray | null
   while ((match = TOKEN_RE.exec(src)) !== null) {
     if (match.index > last) {
-      tokens.push({ type: "plain", value: src.slice(last, match.index) });
+      tokens.push({ type: "plain", value: src.slice(last, match.index) })
     }
-    let type: TokenType = "plain";
-    if (match[1]) type = "comment";
-    else if (match[2]) type = "string";
-    else if (match[3]) type = "const";
-    else if (match[4]) type = "keyword";
-    else if (match[5]) type = "func";
-    else if (match[6]) type = "number";
-    tokens.push({ type, value: match[0] });
-    last = match.index + match[0].length;
+
+    let type: TokenType = "plain"
+
+    if (match[1]) {
+      type = "comment"
+    } else if (match[2]) {
+      type = "string"
+    } else if (match[3]) {
+      type = "const"
+    } else if (match[4]) {
+      type = "keyword"
+    } else if (match[5]) {
+      type = "func"
+    } else if (match[6]) {
+      type = "number"
+    }
+
+    tokens.push({ type, value: match[0] })
+    last = match.index + match[0].length
   }
-  if (last < src.length) tokens.push({ type: "plain", value: src.slice(last) });
-  return tokens;
+
+  if (last < src.length) {
+    tokens.push({ type: "plain", value: src.slice(last) })
+  }
+
+  return tokens
 }
 
 export function ScriptBlock({ code }: { code: string }) {
-  const tokens = useMemo(() => tokenize(code), [code]);
+  const tokens = useMemo(() => tokenize(code), [code])
   return (
     <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
       <code>
-        {tokens.map((token, i) => (
-          <span key={i} className={COLORS[token.type]}>
+        {tokens.map((token, index) => (
+          <span key={index} className={COLORS[token.type]}>
             {token.value}
           </span>
         ))}
       </code>
     </pre>
-  );
+  )
 }

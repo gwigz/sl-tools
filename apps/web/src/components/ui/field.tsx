@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Slider } from "~/components/ui/slider";
-import { Switch } from "~/components/ui/switch";
+import { Input } from "~/components/ui/input"
+import { Label } from "~/components/ui/label"
+import { Slider } from "~/components/ui/slider"
+import { Switch } from "~/components/ui/switch"
 
 /** Full-bleed section divider: stretches to the card edges past CardContent padding. */
 export function CardDivider() {
-  return <div className="-mx-3 my-1.5 h-px bg-foreground/10" />;
+  return <div className="-mx-3 my-1.5 h-px bg-foreground/10" />
 }
 
 export function SliderField({
@@ -19,13 +19,13 @@ export function SliderField({
   onChange,
   suffix,
 }: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-  suffix?: string;
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  onChange: (value: number) => void
+  suffix?: string
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -39,8 +39,8 @@ export function SliderField({
             max={max}
             step={step}
             onChange={(e) => {
-              const n = Number(e.target.value);
-              if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+              const n = Number(e.target.value)
+              if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)))
             }}
             className="w-12 rounded bg-transparent text-right tabular-nums outline-none focus:text-foreground [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
@@ -55,7 +55,7 @@ export function SliderField({
         onValueChange={(v) => onChange(Array.isArray(v) ? v[0] : v)}
       />
     </div>
-  );
+  )
 }
 
 export function NumberField({
@@ -66,12 +66,12 @@ export function NumberField({
   step = 1,
   onChange,
 }: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (value: number) => void;
+  label: string
+  value: number
+  min: number
+  max: number
+  step?: number
+  onChange: (value: number) => void
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -83,12 +83,12 @@ export function NumberField({
         max={max}
         step={step}
         onChange={(e) => {
-          const n = Number(e.target.value);
-          if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+          const n = Number(e.target.value)
+          if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)))
         }}
       />
     </div>
-  );
+  )
 }
 
 export function SwitchRow({
@@ -98,11 +98,11 @@ export function SwitchRow({
   onChange,
   inline = false,
 }: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  inline?: boolean;
+  label: string
+  hint?: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  inline?: boolean
 }) {
   if (inline) {
     return (
@@ -110,7 +110,7 @@ export function SwitchRow({
         <Switch checked={checked} onCheckedChange={onChange} />
         {label}
       </label>
-    );
+    )
   }
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3">
@@ -120,5 +120,5 @@ export function SwitchRow({
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
-  );
+  )
 }

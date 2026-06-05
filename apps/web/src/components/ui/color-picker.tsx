@@ -1,40 +1,40 @@
-"use client";
+"use client"
 
-import { useId } from "react";
-import { HexColorInput, RgbaColorPicker, RgbColorPicker } from "react-colorful";
+import { useId } from "react"
+import { HexColorInput, RgbaColorPicker, RgbColorPicker } from "react-colorful"
 
-import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
-import { cn } from "~/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
+import { cn } from "~/lib/utils"
 
 // `a` is 0..1 (react-colorful convention); r/g/b are 0..255 (SL convention).
-type Rgba = { r: number; g: number; b: number; a: number };
+type Rgba = { r: number; g: number; b: number; a: number }
 
-const clamp = (n: number, max: number) => Math.max(0, Math.min(max, n));
-const hex2 = (n: number) => clamp(Math.round(n), 255).toString(16).padStart(2, "0");
+const clamp = (n: number, max: number) => Math.max(0, Math.min(max, n))
+const hex2 = (n: number) => clamp(Math.round(n), 255).toString(16).padStart(2, "0")
 
 function parseColor(input: string): Rgba {
-  let s = input.trim().replace(/^#/, "");
+  let s = input.trim().replace(/^#/, "")
   if (s.length === 3 || s.length === 4) {
     s = s
       .split("")
       .map((c) => c + c)
-      .join("");
+      .join("")
   }
-  const r = Number.parseInt(s.slice(0, 2), 16);
-  const g = Number.parseInt(s.slice(2, 4), 16);
-  const b = Number.parseInt(s.slice(4, 6), 16);
-  const a = s.length >= 8 ? Number.parseInt(s.slice(6, 8), 16) / 255 : 1;
+  const r = Number.parseInt(s.slice(0, 2), 16)
+  const g = Number.parseInt(s.slice(2, 4), 16)
+  const b = Number.parseInt(s.slice(4, 6), 16)
+  const a = s.length >= 8 ? Number.parseInt(s.slice(6, 8), 16) / 255 : 1
   return {
     r: Number.isNaN(r) ? 0 : r,
     g: Number.isNaN(g) ? 0 : g,
     b: Number.isNaN(b) ? 0 : b,
     a: Number.isNaN(a) ? 1 : a,
-  };
+  }
 }
 
 function toHex({ r, g, b, a }: Rgba, withAlpha: boolean): string {
-  const base = `#${hex2(r)}${hex2(g)}${hex2(b)}`;
-  return withAlpha && a < 1 ? base + hex2(a * 255) : base;
+  const base = `#${hex2(r)}${hex2(g)}${hex2(b)}`
+  return withAlpha && a < 1 ? base + hex2(a * 255) : base
 }
 
 function ChannelInput({
@@ -42,11 +42,11 @@ function ChannelInput({
   value,
   onChange,
 }: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
+  label: string
+  value: number
+  onChange: (n: number) => void
 }) {
-  const id = useId();
+  const id = useId()
   return (
     <div className="flex flex-1 flex-col items-center gap-1">
       <label htmlFor={id} className="text-[0.65rem] text-muted-foreground">
@@ -59,13 +59,13 @@ function ChannelInput({
         max={255}
         value={value}
         onChange={(e) => {
-          const n = Number(e.target.value);
-          if (!Number.isNaN(n)) onChange(clamp(Math.round(n), 255));
+          const n = Number(e.target.value)
+          if (!Number.isNaN(n)) onChange(clamp(Math.round(n), 255))
         }}
         className="h-7 w-full rounded-md border bg-transparent text-center font-mono text-xs tabular-nums outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
     </div>
-  );
+  )
 }
 
 // Swatch trigger that opens a popover with an HSV picker, SL-style 0-255 RGB(A)
@@ -77,13 +77,13 @@ export function ColorPicker({
   alpha = false,
   className,
 }: {
-  value: string;
-  onChange: (value: string) => void;
-  alpha?: boolean;
-  className?: string;
+  value: string
+  onChange: (value: string) => void
+  alpha?: boolean
+  className?: string
 }) {
-  const rgba = parseColor(value);
-  const emit = (next: Partial<Rgba>) => onChange(toHex({ ...rgba, ...next }, alpha));
+  const rgba = parseColor(value)
+  const emit = (next: Partial<Rgba>) => onChange(toHex({ ...rgba, ...next }, alpha))
 
   return (
     <Popover>
@@ -131,5 +131,5 @@ export function ColorPicker({
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

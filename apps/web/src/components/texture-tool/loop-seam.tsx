@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import { Expand, LoaderCircle, Wand2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Expand, LoaderCircle, Wand2 } from "lucide-react"
+import { useEffect, useRef } from "react"
 
-import { Button } from "~/components/ui/button";
-import { CanvasBitmap } from "~/components/ui/canvas-bitmap";
-import { Spinner } from "~/components/ui/spinner";
-import { safeDrawImage } from "~/lib/sl/image";
-import { checkerBg, cn, formatClock } from "~/lib/utils";
+import { Button } from "~/components/ui/button"
+import { CanvasBitmap } from "~/components/ui/canvas-bitmap"
+import { Spinner } from "~/components/ui/spinner"
+import { safeDrawImage } from "~/lib/sl/image"
+import { checkerBg, cn, formatClock } from "~/lib/utils"
 
 export function SeamFrame({
   bitmap,
@@ -16,11 +16,11 @@ export function SeamFrame({
   className,
   fill,
 }: {
-  bitmap: ImageBitmap | null;
-  faceAspect: number;
-  caption?: string;
-  className?: string;
-  fill?: boolean;
+  bitmap: ImageBitmap | null
+  faceAspect: number
+  caption?: string
+  className?: string
+  fill?: boolean
 }) {
   return (
     <div
@@ -38,7 +38,7 @@ export function SeamFrame({
         </span>
       )}
     </div>
-  );
+  )
 }
 
 function SeamPlayer({
@@ -46,50 +46,75 @@ function SeamPlayer({
   faceAspect,
   loading,
 }: {
-  frames: ImageBitmap[];
-  faceAspect: number;
-  loading?: boolean;
+  frames: ImageBitmap[]
+  faceAspect: number
+  loading?: boolean
 }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || frames.length === 0) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvas = ref.current
 
-    const n = frames.length;
-    const k = Math.min(3, n);
-    const seq: number[] = [];
-    for (let i = k; i >= 1; i--) seq.push(n - i); // last k
-    for (let i = 0; i < k; i++) seq.push(i); // first k
-    const unique = seq.filter((v, i) => seq.indexOf(v) === i);
+    if (!canvas || frames.length === 0) {
+      return
+    }
 
-    const draw = (idx: number) => {
-      const bmp = frames[idx];
-      if (!bmp || bmp.width === 0) return;
-      canvas.width = bmp.width;
-      canvas.height = bmp.height;
-      safeDrawImage(ctx, bmp, 0, 0);
-    };
+    const ctx = canvas.getContext("2d")
 
-    let raf = 0;
-    let last = 0;
-    let pos = 0;
-    const interval = 180;
-    draw(unique[0]);
-    const tick = (now: number) => {
-      if (last === 0) last = now;
-      if (now - last >= interval) {
-        last = now;
-        pos = (pos + 1) % unique.length;
-        draw(unique[pos]);
+    if (!ctx) {
+      return
+    }
+
+    const frameCount = frames.length
+    const edgeCount = Math.min(3, frameCount)
+    const seq: number[] = []
+
+    for (let index = edgeCount; index >= 1; index--) {
+      seq.push(frameCount - index) // last edgeCount
+    }
+
+    for (let index = 0; index < edgeCount; index++) {
+      seq.push(index) // first edgeCount
+    }
+
+    const unique = seq.filter((value, index) => seq.indexOf(value) === index)
+
+    const draw = (frameIndex: number) => {
+      const bitmap = frames[frameIndex]
+
+      if (!bitmap || bitmap.width === 0) {
+        return
       }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [frames]);
+
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      safeDrawImage(ctx, bitmap, 0, 0)
+    }
+
+    let raf = 0
+    let last = 0
+    let pos = 0
+    const interval = 180
+    draw(unique[0])
+
+    const tick = (now: number) => {
+      if (last === 0) {
+        last = now
+      }
+
+      if (now - last >= interval) {
+        last = now
+        pos = (pos + 1) % unique.length
+        draw(unique[pos])
+      }
+
+      raf = requestAnimationFrame(tick)
+    }
+
+    raf = requestAnimationFrame(tick)
+
+    return () => cancelAnimationFrame(raf)
+  }, [frames])
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -106,7 +131,7 @@ function SeamPlayer({
       </div>
       <span className="text-center text-[0.65rem] text-muted-foreground">seam loop</span>
     </div>
-  );
+  )
 }
 
 export function LoopSeam({
@@ -121,19 +146,19 @@ export function LoopSeam({
   autoMatching,
   onExpand,
 }: {
-  frames: ImageBitmap[];
-  inFrame?: ImageBitmap | null;
-  outFrame?: ImageBitmap | null;
-  startTime: number;
-  endTime: number;
-  faceAspect: number;
-  loading?: boolean;
-  onAutoMatch: () => void;
-  autoMatching: boolean;
-  onExpand?: () => void;
+  frames: ImageBitmap[]
+  inFrame?: ImageBitmap | null
+  outFrame?: ImageBitmap | null
+  startTime: number
+  endTime: number
+  faceAspect: number
+  loading?: boolean
+  onAutoMatch: () => void
+  autoMatching: boolean
+  onExpand?: () => void
 }) {
-  const first = inFrame ?? frames[0] ?? null;
-  const last = outFrame ?? frames.at(-1) ?? null;
+  const first = inFrame ?? frames[0] ?? null
+  const last = outFrame ?? frames.at(-1) ?? null
 
   return (
     <div className="flex flex-col gap-2">
@@ -177,5 +202,5 @@ export function LoopSeam({
         </Button>
       </div>
     </div>
-  );
+  )
 }

@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import { LoaderCircle, Video } from "lucide-react";
+import { LoaderCircle, Video } from "lucide-react"
 
-import { Badge } from "~/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 
-import { Dropzone } from "./dropzone";
-import type { SourceMeta } from "~/hooks/use-frame-extraction";
+import { Dropzone } from "./dropzone"
+import type { SourceMeta } from "~/hooks/use-frame-extraction"
 
-const SOURCE_ACCEPT = "video/*,image/gif,image/webp,image/apng";
+const SOURCE_ACCEPT = "video/*,image/gif,image/webp,image/apng"
 
 export function SourceCard({
   onSelect,
@@ -16,10 +16,10 @@ export function SourceCard({
   loadingSource,
   preview,
 }: {
-  onSelect: (file: File) => void;
-  meta: SourceMeta | null;
-  loadingSource: boolean;
-  preview: ImageBitmap | null;
+  onSelect: (file: File) => void
+  meta: SourceMeta | null
+  loadingSource: boolean
+  preview: ImageBitmap | null
 }) {
   return (
     <Card size="sm">
@@ -57,5 +57,5 @@ export function SourceCard({
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
