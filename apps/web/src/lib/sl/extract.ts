@@ -20,10 +20,8 @@ export interface FrameSampler {
   height: number;
   durationMs: number;
   nativeFrameCount: number;
-  /** Source frame rate in FPS (0 if unknown). */
   frameRate: number;
   sampleByCount: (n: number, opts?: SampleOptions) => Promise<ImageBitmap[]>;
-  /** Decode frames at specific times (seconds), for scrubbing / loop tuning. */
   sampleAtTimes: (timesSec: number[], opts?: SampleOptions) => Promise<ImageBitmap[]>;
   dispose: () => void;
 }
@@ -158,9 +156,7 @@ async function loadVideoWebCodecs(file: File): Promise<FrameSampler | null> {
     let frameRate = 0;
     try {
       frameRate = (await track.computePacketStats(60)).averagePacketRate;
-    } catch {
-      // Frame rate is best-effort.
-    }
+    } catch {}
 
     const packetSink = new EncodedPacketSink(track);
     let sink: import("mediabunny").CanvasSink | null = null;
@@ -189,7 +185,6 @@ async function loadVideoWebCodecs(file: File): Promise<FrameSampler | null> {
       return out;
     };
 
-    // A single decoder can't run two iterations at once; serialize runs.
     const serialize = <T>(fn: () => Promise<T>): Promise<T> => {
       const result = lock.then(fn, fn);
       lock = result.then(
@@ -311,7 +306,6 @@ async function loadAnimated(file: File): Promise<FrameSampler> {
     width = image.displayWidth;
     height = image.displayHeight;
     native.push({ frame: image, start: cursor });
-    // VideoFrame.duration is in microseconds; default to 100ms when absent.
     cursor += (image.duration ?? 100_000) / 1000;
   }
   const durationMs = cursor;
@@ -350,7 +344,6 @@ async function loadAnimated(file: File): Promise<FrameSampler> {
   };
 }
 
-/** Index of the last native frame whose start time (ms) is <= `tMs`. */
 function frameAt(native: { start: number }[], tMs: number): number {
   let idx = 0;
   for (let j = 0; j < native.length; j++) {

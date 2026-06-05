@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
-import { cn } from "~/lib/utils";
+import { checkerBg, cn } from "~/lib/utils";
 
 function SheetView({
   sheet,
@@ -32,12 +32,7 @@ function SheetView({
   }, [sheet]);
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-md border bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:16px_16px]",
-        className,
-      )}
-    >
+    <div className={cn("relative overflow-hidden rounded-md border", checkerBg(16), className)}>
       {sheet ? (
         <>
           <canvas ref={canvasRef} className="block h-auto w-full" />

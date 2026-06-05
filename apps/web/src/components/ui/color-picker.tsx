@@ -37,7 +37,6 @@ function toHex({ r, g, b, a }: Rgba, withAlpha: boolean): string {
   return withAlpha && a < 1 ? base + hex2(a * 255) : base;
 }
 
-// A single 0–255 channel input (R, G, B, or A) shown beneath the picker.
 function ChannelInput({
   label,
   value,
@@ -69,7 +68,7 @@ function ChannelInput({
   );
 }
 
-// Swatch trigger that opens a popover with an HSV picker, SL-style 0–255 RGB(A)
+// Swatch trigger that opens a popover with an HSV picker, SL-style 0-255 RGB(A)
 // fields, and a hex field. `value`/`onChange` use `#rrggbb` (or `#rrggbbaa` when
 // `alpha` is enabled and not fully opaque).
 export function ColorPicker({

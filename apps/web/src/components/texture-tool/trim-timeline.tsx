@@ -3,9 +3,13 @@
 import { ChevronLeft, ChevronRight, Crosshair, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useSnapshot } from "valtio";
+
 import { Button } from "~/components/ui/button";
-import { safeDrawImage } from "~/lib/sl/image";
-import { cn } from "~/lib/utils";
+import { CanvasBitmap } from "~/components/ui/canvas-bitmap";
+import { cn, formatClock } from "~/lib/utils";
+
+import { ui } from "./store";
 
 export interface TimelineThumb {
   time: number;
@@ -18,48 +22,18 @@ type Drag = "start" | "end" | "region" | "pan" | null;
 const PRESETS = [0.5, 1, 1.8, 2, 3.5];
 const FILM_COUNT = 16;
 
-function formatTime(sec: number): string {
-  if (!Number.isFinite(sec)) return "0.00s";
-  if (sec >= 60) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toFixed(2).padStart(5, "0")}`;
-  }
-  return `${sec.toFixed(2)}s`;
-}
+// Every preset zooms to the same (widest) level, and only if the user hasn't
+// touched the zoom in the last RECENT_ZOOM_MS, so rapid preset switching keeps
+// a stable view instead of re-zooming on each click.
+const PRESET_ZOOM_LEN = Math.max(...PRESETS);
+const RECENT_ZOOM_MS = 5000;
 
-// Draws a bitmap at its intrinsic size; CSS object-cover crops it to the cell.
 function FilmCell({ bitmap }: { bitmap: ImageBitmap }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || bitmap.width === 0) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    safeDrawImage(ctx, bitmap, 0, 0);
-  }, [bitmap]);
   return (
     <div className="min-w-0 flex-1 overflow-hidden border-border/40 not-last:border-r">
-      <canvas ref={ref} className="block h-full w-full object-cover" />
+      <CanvasBitmap bitmap={bitmap} className="block h-full w-full object-cover" />
     </div>
   );
-}
-
-function ScrubPreview({ bitmap }: { bitmap: ImageBitmap | null }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || !bitmap || bitmap.width === 0) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    safeDrawImage(ctx, bitmap, 0, 0);
-  }, [bitmap]);
-  if (!bitmap) return null;
-  return <canvas ref={ref} className="block h-full w-auto" />;
 }
 
 export function TrimTimeline({
@@ -75,9 +49,7 @@ export function TrimTimeline({
   thumbs: TimelineThumb[];
   value: Range;
   frameStep: number;
-  /** Live update during a drag (cheap visuals only). */
   onChange: (value: Range) => void;
-  /** Committed update (drag release, nudge, type, click) — triggers re-render. */
   onCommit: (value: Range) => void;
   requestFrame?: (timeSec: number) => Promise<ImageBitmap | null>;
 }) {
@@ -90,19 +62,20 @@ export function TrimTimeline({
   const dur = durationSec > 0 ? durationSec : 1;
   const gap = Math.max(frameStep, dur / 5000);
 
-  // Visible window of the timeline; reset to the whole clip on a new source.
-  const [view, setView] = useState<Range>([0, dur]);
-  useEffect(() => {
-    setView([0, durationSec > 0 ? durationSec : 1]);
-  }, [durationSec]);
+  const view = useSnapshot(ui).view;
+  const lastZoomChange = useRef(0);
+  const setView = (next: Range) => {
+    if (Math.abs(next[1] - next[0] - (ui.view[1] - ui.view[0])) > 1e-3) {
+      lastZoomChange.current = Date.now();
+    }
+    ui.view = next;
+  };
   const [vStart, vEnd] = view;
   const viewLen = Math.max(gap, vEnd - vStart);
   const zoomed = viewLen < dur - 1e-3;
 
   const valueRef = useRef(value);
   valueRef.current = value;
-  const viewRef = useRef(view);
-  viewRef.current = view;
   const regionRef = useRef<{ at: number; range: Range }>({ at: 0, range: [0, 0] });
   const panRef = useRef<{ at: number; start: number }>({ at: 0, start: 0 });
 
@@ -112,7 +85,7 @@ export function TrimTimeline({
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect) return 0;
     const f = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    const [s, e] = viewRef.current;
+    const [s, e] = ui.view;
     return s + f * (e - s);
   }, []);
 
@@ -145,7 +118,6 @@ export function TrimTimeline({
     [dur],
   );
 
-  // --- Zoom / pan -----------------------------------------------------------
   const clampView = useCallback(
     (start: number, len: number): Range => {
       const l = Math.min(dur, Math.max(gap * 4, len));
@@ -157,11 +129,23 @@ export function TrimTimeline({
 
   const zoomAround = useCallback(
     (centerTime: number, factor: number) => {
-      const [s, e] = viewRef.current;
+      const [s, e] = ui.view;
       const len = e - s;
       const nl = Math.min(dur, Math.max(gap * 4, len * factor));
       const f = len > 0 ? (centerTime - s) / len : 0.5;
       setView(clampView(centerTime - f * nl, nl));
+    },
+    [clampView, dur, gap],
+  );
+
+  const zoomToSelectionCenter = useCallback(
+    (factor: number) => {
+      const [s, e] = ui.view;
+      const len = e - s;
+      const nl = Math.min(dur, Math.max(gap * 4, len * factor));
+      const [vs, ve] = valueRef.current;
+      const mid = (vs + ve) / 2;
+      setView(clampView(mid - nl / 2, nl));
     },
     [clampView, dur, gap],
   );
@@ -174,22 +158,18 @@ export function TrimTimeline({
 
   const fitWhole = useCallback(() => setView([0, dur]), [dur]);
 
-  // Native (non-passive) wheel so preventDefault reliably stops page scroll.
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Proportional to scroll delta, clamped so a single notch / trackpad
-      // burst can't leap; > 1 zooms out, < 1 zooms in.
       const factor = Math.min(1.25, Math.max(0.8, Math.exp(e.deltaY * 0.0015)));
-      zoomAround(timeFromTrackX(e.clientX), factor);
+      zoomToSelectionCenter(factor);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [zoomAround, timeFromTrackX]);
+  }, [zoomToSelectionCenter]);
 
-  // --- Scrub (throttled) ----------------------------------------------------
   const inFlight = useRef(false);
   const queued = useRef<number | null>(null);
   const scrubRef = useRef<ImageBitmap | null>(null);
@@ -228,7 +208,6 @@ export function TrimTimeline({
     [requestFrame],
   );
 
-  // --- Zoomed filmstrip: decode frames across the visible window ------------
   const [viewThumbs, setViewThumbs] = useState<ImageBitmap[]>([]);
   const viewThumbsRef = useRef<ImageBitmap[]>([]);
   useEffect(
@@ -247,15 +226,15 @@ export function TrimTimeline({
       }
       return;
     }
-    // Poll the current view (read from a ref) and re-decode only when it has
+    // Poll the current view (read from the store) and re-decode only when it has
     // moved. This keeps the strip refreshing *while* panning, unlike a debounce
-    // that waits for the pan to stop. The in-flight guard avoids piling up.
+    // that waits for the pan to stop. The `busy` guard avoids piling up decodes.
     let cancelled = false;
     let busy = false;
     let lastKey = "";
     const decode = async () => {
       if (busy) return;
-      const [s, e] = viewRef.current;
+      const [s, e] = ui.view;
       const key = `${s.toFixed(3)}_${e.toFixed(3)}`;
       if (key === lastKey) return;
       busy = true;
@@ -287,7 +266,6 @@ export function TrimTimeline({
     };
   }, [requestFrame, zoomed]);
 
-  // --- Pointer drag (handles / region / minimap pan) ------------------------
   const pointerXRef = useRef(0);
   useEffect(() => {
     if (!drag) return;
@@ -300,7 +278,7 @@ export function TrimTimeline({
       pointerXRef.current = e.clientX;
       if (drag === "pan") {
         const t = timeFromMiniX(e.clientX);
-        const len = viewRef.current[1] - viewRef.current[0];
+        const len = ui.view[1] - ui.view[0];
         setView(clampView(panRef.current.start + (t - panRef.current.at), len));
         return;
       }
@@ -311,12 +289,11 @@ export function TrimTimeline({
       setDrag(null);
     };
 
-    // Auto-pan the view when a handle/region drag reaches a track edge.
     let raf = 0;
     const tick = () => {
       if (drag !== "pan") {
         const rect = trackRef.current?.getBoundingClientRect();
-        const [s, e] = viewRef.current;
+        const [s, e] = ui.view;
         if (rect) {
           const edge = 28;
           const x = pointerXRef.current;
@@ -368,7 +345,12 @@ export function TrimTimeline({
   const applyPreset = (len: number) => {
     const start = Math.min(value[0], Math.max(0, dur - len));
     onCommit([start, Math.min(dur, start + len)]);
-    setView(clampView(start - len * 2.5, len * 6));
+    const now = Date.now();
+    if (now - lastZoomChange.current >= RECENT_ZOOM_MS) {
+      const z = PRESET_ZOOM_LEN;
+      setView(clampView(start - z * 2.5, z * 6));
+    }
+    lastZoomChange.current = now;
   };
 
   const startPct = pct(value[0]);
@@ -377,7 +359,6 @@ export function TrimTimeline({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Loop presets + zoom controls */}
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1">
           <span className="text-[0.7rem] text-muted-foreground">Loop</span>
@@ -431,7 +412,6 @@ export function TrimTimeline({
         </div>
       </div>
 
-      {/* Main (zoomable) track */}
       <div className="relative">
         {hover && !drag && (
           <div
@@ -440,11 +420,11 @@ export function TrimTimeline({
           >
             {scrub && (
               <div className="h-12 overflow-hidden rounded border bg-background shadow-lg">
-                <ScrubPreview bitmap={scrub} />
+                <CanvasBitmap bitmap={scrub} className="block h-full w-auto" />
               </div>
             )}
             <span className="rounded bg-foreground px-1 py-0.5 font-mono text-[0.6rem] text-background">
-              {formatTime(hover.time)}
+              {formatClock(hover.time, 2)}
             </span>
           </div>
         )}
@@ -452,8 +432,6 @@ export function TrimTimeline({
           ref={trackRef}
           className="relative h-16 overflow-hidden rounded-md border select-none"
           onPointerDown={(e) => {
-            // Clicking the track moves the whole loop to be centred on the click,
-            // then continues as a region drag.
             const t = timeFromTrackX(e.clientX);
             const len = value[1] - value[0];
             const ns = Math.min(dur - len, Math.max(0, t - len / 2));
@@ -471,7 +449,6 @@ export function TrimTimeline({
           }}
           onPointerLeave={() => setHover(null)}
         >
-          {/* Filmstrip */}
           <div className="absolute inset-0 flex">
             {filmstrip.length === 0 ? (
               <div className="flex-1 bg-muted/40" />
@@ -480,7 +457,6 @@ export function TrimTimeline({
             )}
           </div>
 
-          {/* Dimmed regions outside the selection */}
           <div
             className="absolute inset-y-0 left-0 bg-background/70"
             style={{ width: `${Math.min(100, Math.max(0, startPct))}%` }}
@@ -490,7 +466,6 @@ export function TrimTimeline({
             style={{ width: `${Math.min(100, Math.max(0, 100 - endPct))}%` }}
           />
 
-          {/* Draggable selection region */}
           <div
             className="absolute inset-y-0 z-[5] cursor-grab active:cursor-grabbing"
             style={{ left: `${startPct}%`, right: `${100 - endPct}%` }}
@@ -501,13 +476,11 @@ export function TrimTimeline({
             }}
           />
 
-          {/* Selection border */}
           <div
             className="pointer-events-none absolute inset-y-0 z-[5] border-x-2 border-primary"
             style={{ left: `${startPct}%`, right: `${100 - endPct}%` }}
           />
 
-          {/* Handles */}
           {(["start", "end"] as const).map((h) => {
             const p = h === "start" ? startPct : endPct;
             if (p < -2 || p > 102) return null;
@@ -538,7 +511,6 @@ export function TrimTimeline({
             );
           })}
 
-          {/* Hover cursor line */}
           {hover && !drag && (
             <div
               className="pointer-events-none absolute inset-y-0 z-20 w-px bg-foreground/70"
@@ -548,7 +520,6 @@ export function TrimTimeline({
         </div>
       </div>
 
-      {/* Minimap (whole clip) — shown when zoomed in */}
       {zoomed && (
         <div
           ref={miniRef}
@@ -575,20 +546,21 @@ export function TrimTimeline({
         </div>
       )}
 
-      {/* Precise controls */}
       <div className="flex items-center justify-between gap-2 text-xs">
         <HandleControls
           label="In"
           time={value[0]}
+          frameStep={frameStep}
           onNudge={(d, big) => nudge("start", d, big)}
           onType={(t) => onCommit(withHandle("start", t))}
         />
         <span className="font-mono text-muted-foreground">
-          {formatTime(value[1] - value[0])} loop
+          {formatClock(value[1] - value[0], 2)} loop
         </span>
         <HandleControls
           label="Out"
           time={value[1]}
+          frameStep={frameStep}
           onNudge={(d, big) => nudge("end", d, big)}
           onType={(t) => onCommit(withHandle("end", t))}
         />
@@ -600,14 +572,18 @@ export function TrimTimeline({
 function HandleControls({
   label,
   time,
+  frameStep,
   onNudge,
   onType,
 }: {
   label: string;
   time: number;
+  frameStep: number;
   onNudge: (dir: -1 | 1, big: boolean) => void;
   onType: (time: number) => void;
 }) {
+  const step = frameStep > 0 ? frameStep : 1 / 30;
+  const frame = Math.round(time / step);
   return (
     <div className="flex items-center gap-1">
       <span className="text-muted-foreground">{label}</span>
@@ -621,12 +597,12 @@ function HandleControls({
       </Button>
       <input
         type="number"
-        value={Number(time.toFixed(2))}
+        value={frame}
         min={0}
-        step={0.05}
+        step={1}
         onChange={(e) => {
           const n = Number(e.target.value);
-          if (!Number.isNaN(n)) onType(n);
+          if (!Number.isNaN(n)) onType(n * step);
         }}
         className={cn(
           "w-16 rounded bg-transparent text-center font-mono tabular-nums outline-none",

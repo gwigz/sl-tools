@@ -42,6 +42,43 @@ export function safeDrawImage(
   }
 }
 
+/** Downscale a frame to a tiny RGBA buffer for cheap similarity comparison. */
+let scratchCanvas: HTMLCanvasElement | null = null;
+let scratchCtx: CanvasRenderingContext2D | null = null;
+
+export function downscaleData(bitmap: ImageBitmap, size = 32): Uint8ClampedArray {
+  if (!scratchCanvas) {
+    scratchCanvas = document.createElement("canvas");
+    scratchCtx = scratchCanvas.getContext("2d", { willReadFrequently: true });
+  }
+  const ctx = scratchCtx!;
+  if (scratchCanvas.width !== size || scratchCanvas.height !== size) {
+    scratchCanvas.width = size;
+    scratchCanvas.height = size;
+  } else {
+    ctx.clearRect(0, 0, size, size);
+  }
+  ctx.drawImage(bitmap, 0, 0, size, size);
+  return ctx.getImageData(0, 0, size, size).data;
+}
+
+export function bitmapToPngDataUrl(bitmap: ImageBitmap): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+export function fileToDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function loadImageBitmap(file: File) {
   if (isTga(file)) {
     const data = decodeTga(await file.arrayBuffer());

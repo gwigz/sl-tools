@@ -1,10 +1,10 @@
 "use client";
 
 import { FileVideo, Upload } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { safeDrawImage } from "~/lib/sl/image";
-import { cn } from "~/lib/utils";
+import { ScaledCanvasBitmap } from "~/components/ui/canvas-bitmap";
+import { checkerBg, cn } from "~/lib/utils";
 
 const DEFAULT_ACCEPT = "video/*,image/gif,image/webp,image/apng,image/png,image/*";
 
@@ -91,24 +91,14 @@ export function Dropzone({
 }
 
 function Thumbnail({ bitmap }: { bitmap: ImageBitmap }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || bitmap.width === 0) return;
-    const size = 44;
-    const scale = Math.min(size / bitmap.width, size / bitmap.height);
-    const w = Math.max(1, Math.round(bitmap.width * scale));
-    const h = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (ctx) safeDrawImage(ctx, bitmap, 0, 0, w, h);
-  }, [bitmap]);
-
   return (
-    <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:10px_10px]">
-      <canvas ref={ref} className="max-h-full max-w-full" />
+    <div
+      className={cn(
+        "flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md border",
+        checkerBg(10),
+      )}
+    >
+      <ScaledCanvasBitmap bitmap={bitmap} size={44} className="max-h-full max-w-full" />
     </div>
   );
 }

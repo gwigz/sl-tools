@@ -66,7 +66,6 @@ ${args}
 export function buildSluaScript(o: ScriptOptions) {
   const { cols, rows, fps, frameCount, face, link } = o;
   const flags = animFlags(o);
-  // Luau has no `|` operator, so multiple flags are combined with bit32.bor().
   const mode = flags.length === 1 ? flags[0] : `bit32.bor(${flags.join(", ")})`;
   const length = Math.min(frameCount, cols * rows);
 

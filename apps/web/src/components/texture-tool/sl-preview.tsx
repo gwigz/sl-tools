@@ -1,11 +1,14 @@
 "use client";
 
-import { Expand, Pause, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Expand } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useSnapshot } from "valtio";
 
 import { Button } from "~/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
-import { cn } from "~/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog";
+import { checkerBg, cn } from "~/lib/utils";
+
+import { ui } from "./store";
 
 type PlaybackProps = {
   sheet: HTMLCanvasElement | null;
@@ -109,52 +112,57 @@ function PlaybackCanvas({
   );
 }
 
-export function SlPreview(props: PlaybackProps) {
+export function SlPreview({ controls, ...props }: PlaybackProps & { controls?: React.ReactNode }) {
   const { sheet, faceAspect } = props;
-  const [playing, setPlaying] = useState(true);
   const ar = faceAspect > 0 ? faceAspect : 1;
+  const { previewOpen } = useSnapshot(ui);
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <Dialog>
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => {
+          ui.previewOpen = open;
+        }}
+      >
         <div
-          className="group/preview relative flex max-w-full items-center justify-center overflow-hidden rounded-md border bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:16px_16px]"
+          className={cn(
+            "group/preview relative flex max-w-full items-center justify-center overflow-hidden rounded-md border",
+            checkerBg(16),
+          )}
           style={{ aspectRatio: `${ar}` }}
         >
-          <PlaybackCanvas {...props} playing={playing} className="h-auto w-full max-w-[360px]" />
+          <PlaybackCanvas {...props} playing className="h-auto w-full max-w-[360px]" />
           {!sheet && <span className="absolute text-xs text-muted-foreground">No preview yet</span>}
           {sheet && (
-            <DialogTrigger
-              render={
-                <Button
-                  variant="secondary"
-                  size="icon-sm"
-                  aria-label="Expand preview"
-                  className="absolute top-2 right-2 opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover/preview:opacity-100"
-                />
-              }
+            <Button
+              variant="secondary"
+              size="icon-sm"
+              aria-label="Expand preview"
+              onClick={() => {
+                ui.previewOpen = true;
+              }}
+              className="absolute top-2 right-2 opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover/preview:opacity-100"
             >
               <Expand />
-            </DialogTrigger>
+            </Button>
           )}
         </div>
         <DialogContent
-          className="flex max-w-[min(90vw,calc(90vh*var(--ar)))] flex-col gap-3 p-4"
+          className="flex max-h-[92vh] max-w-[min(92vw,calc(62vh*var(--ar)))] flex-col gap-3 overflow-y-auto p-4"
           style={{ ["--ar" as string]: `${ar}` }}
         >
           <DialogTitle>In-World Preview</DialogTitle>
           <div
-            className="relative flex w-full items-center justify-center overflow-hidden rounded-md border bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:24px_24px]"
+            className={cn(
+              "relative flex w-full items-center justify-center overflow-hidden rounded-md border",
+              checkerBg(24),
+            )}
             style={{ aspectRatio: `${ar}` }}
           >
-            <PlaybackCanvas {...props} playing={playing} className="h-full w-full" />
+            <PlaybackCanvas {...props} playing className="h-full w-full" />
           </div>
-          <div className="flex justify-center">
-            <Button variant="outline" size="sm" onClick={() => setPlaying((p) => !p)}>
-              {playing ? <Pause /> : <Play />}
-              {playing ? "Pause" : "Play"}
-            </Button>
-          </div>
+          {controls}
         </DialogContent>
       </Dialog>
     </div>

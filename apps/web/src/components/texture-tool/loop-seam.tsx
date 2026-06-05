@@ -1,58 +1,46 @@
 "use client";
 
-import { LoaderCircle, Wand2 } from "lucide-react";
+import { Expand, LoaderCircle, Wand2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { Button } from "~/components/ui/button";
+import { CanvasBitmap } from "~/components/ui/canvas-bitmap";
 import { Spinner } from "~/components/ui/spinner";
 import { safeDrawImage } from "~/lib/sl/image";
+import { checkerBg, cn, formatClock } from "~/lib/utils";
 
-const CHECKER =
-  "bg-[conic-gradient(#0000_90deg,#80808015_0_180deg,#0000_0_270deg,#80808015_0)] bg-[length:12px_12px]";
-
-function fmt(sec: number): string {
-  if (sec >= 60) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toFixed(1).padStart(4, "0")}`;
-  }
-  return `${sec.toFixed(2)}s`;
-}
-
-function FrameBox({
+export function SeamFrame({
   bitmap,
   faceAspect,
   caption,
+  className,
+  fill,
 }: {
   bitmap: ImageBitmap | null;
   faceAspect: number;
-  caption: string;
+  caption?: string;
+  className?: string;
+  fill?: boolean;
 }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || !bitmap) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    safeDrawImage(ctx, bitmap, 0, 0);
-  }, [bitmap]);
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
+    <div
+      className={cn("flex flex-col gap-1", fill ? "h-full" : `min-w-0 ${className ?? "flex-1"}`)}
+    >
       <div
-        className={`overflow-hidden rounded border ${CHECKER}`}
+        className={cn("overflow-hidden rounded border", checkerBg(12), fill && "h-full w-auto")}
         style={{ aspectRatio: `${faceAspect > 0 ? faceAspect : 1}` }}
       >
-        {bitmap && <canvas ref={ref} className="h-full w-full object-cover" />}
+        <CanvasBitmap bitmap={bitmap} className="h-full w-full object-cover" />
       </div>
-      <span className="text-center font-mono text-[0.65rem] text-muted-foreground">{caption}</span>
+      {caption && (
+        <span className="text-center font-mono text-[0.65rem] text-muted-foreground">
+          {caption}
+        </span>
+      )}
     </div>
   );
 }
 
-// Slowly cycles the last few frames into the first few so the loop's wrap point
-// can be scrutinised.
 function SeamPlayer({
   frames,
   faceAspect,
@@ -106,7 +94,7 @@ function SeamPlayer({
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div
-        className={`relative overflow-hidden rounded border-2 border-primary/60 ${CHECKER}`}
+        className={cn("relative overflow-hidden rounded border-2 border-primary/60", checkerBg(12))}
         style={{ aspectRatio: `${faceAspect > 0 ? faceAspect : 1}` }}
       >
         <canvas ref={ref} className="h-full w-full object-cover" />
@@ -131,9 +119,9 @@ export function LoopSeam({
   loading,
   onAutoMatch,
   autoMatching,
+  onExpand,
 }: {
   frames: ImageBitmap[];
-  /** Live in/out frames at the current handles, decoded ahead of re-extraction. */
   inFrame?: ImageBitmap | null;
   outFrame?: ImageBitmap | null;
   startTime: number;
@@ -142,16 +130,36 @@ export function LoopSeam({
   loading?: boolean;
   onAutoMatch: () => void;
   autoMatching: boolean;
+  onExpand?: () => void;
 }) {
   const first = inFrame ?? frames[0] ?? null;
   const last = outFrame ?? frames.at(-1) ?? null;
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-2">
-        <FrameBox bitmap={first} faceAspect={faceAspect} caption={`in · ${fmt(startTime)}`} />
+      <div className="group/seam relative flex items-start gap-2">
+        <SeamFrame
+          bitmap={first}
+          faceAspect={faceAspect}
+          caption={`in · ${formatClock(startTime, 2)}`}
+        />
         <SeamPlayer frames={frames} faceAspect={faceAspect} loading={loading} />
-        <FrameBox bitmap={last} faceAspect={faceAspect} caption={`out · ${fmt(endTime)}`} />
+        <SeamFrame
+          bitmap={last}
+          faceAspect={faceAspect}
+          caption={`out · ${formatClock(endTime, 2)}`}
+        />
+        {onExpand && (
+          <Button
+            variant="secondary"
+            size="icon-sm"
+            aria-label="Expand loop view"
+            onClick={onExpand}
+            className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover/seam:opacity-100"
+          >
+            <Expand />
+          </Button>
+        )}
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[0.7rem] text-muted-foreground">

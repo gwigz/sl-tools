@@ -26,7 +26,7 @@ export interface ComposeOptions {
 
 // Fit `img` so that it looks correct AFTER Second Life stretches the cell to the
 // face aspect. We fit into a normalized face box, then map that placement into
-// the (possibly differently-proportioned) cell, pre-distorting so SL's cell→face
+// the (possibly differently-proportioned) cell, pre-distorting so SL's cell-to-face
 // stretch reproduces the intended fit at the right aspect.
 function drawFaceFitted(
   ctx: CanvasRenderingContext2D,
