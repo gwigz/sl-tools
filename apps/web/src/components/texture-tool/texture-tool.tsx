@@ -9,11 +9,11 @@ import { Button } from "~/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "~/components/ui/dialog"
 import { useAutoMatch } from "~/hooks/use-auto-match"
 import { useFrameExtraction } from "~/hooks/use-frame-extraction"
-import { useOverlay } from "~/hooks/use-overlay"
+import { useImageSlot } from "~/hooks/use-image-slot"
 import { useSettingsPersistence } from "~/hooks/use-settings-persistence"
 import { useUndoRedo } from "~/hooks/use-undo-redo"
 import { type AspectState, resolveAspect } from "~/lib/sl/aspect"
-import { canvasToBlob, composeSheet, type OverlayOptions } from "~/lib/sl/compose"
+import { canvasToBlob, composeSheet, type MaskOptions, type OverlayOptions } from "~/lib/sl/compose"
 import { autoGrid, chooseSheet } from "~/lib/sl/grid"
 import { buildScript } from "~/lib/sl/lsl"
 
@@ -39,13 +39,21 @@ export function TextureTool() {
     pow2,
     stretchGrid,
     fit,
-    transparent,
+    backgroundMode,
     background,
+    backgroundFit,
+    backgroundPerCell,
     overlayEnabled,
     overlayOpacity,
     overlayBlend,
     overlayFit,
     overlayPerCell,
+    maskEnabled,
+    maskSource,
+    maskInvert,
+    maskFit,
+    maskPerCell,
+    maskCutOverlay,
     loop,
     reverse,
     pingPong,
@@ -80,7 +88,24 @@ export function TextureTool() {
   const placedFrames = Math.min(targetFrames, cellCapacity)
 
   const { hydrated, resetSettings } = useSettingsPersistence()
-  const { overlayBitmap, overlayName, handleOverlay, resetOverlay } = useOverlay(hydrated)
+  const {
+    bitmap: overlayBitmap,
+    name: overlayName,
+    handleSelect: handleOverlay,
+    reset: resetOverlay,
+  } = useImageSlot("sl-texanim:overlay:v1", "Could not load overlay image")
+  const {
+    bitmap: maskBitmap,
+    name: maskName,
+    handleSelect: handleMask,
+    reset: resetMask,
+  } = useImageSlot("sl-texanim:mask:v1", "Could not load mask image")
+  const {
+    bitmap: backgroundBitmap,
+    name: backgroundName,
+    handleSelect: handleBackground,
+    reset: resetBackground,
+  } = useImageSlot("sl-texanim:background:v1", "Could not load background image")
   const {
     sampler,
     meta,
@@ -119,9 +144,11 @@ export function TextureTool() {
   const handleReset = useCallback(() => {
     resetSettings()
     resetOverlay()
+    resetMask()
+    resetBackground()
     ui.resetOpen = false
     toast.success("Settings reset to defaults")
-  }, [resetSettings, resetOverlay])
+  }, [resetSettings, resetOverlay, resetMask, resetBackground])
 
   useEffect(() => {
     if (frames.length === 0) {
@@ -139,6 +166,29 @@ export function TextureTool() {
           }
         : null
 
+    const mask: MaskOptions | null =
+      maskEnabled && maskBitmap
+        ? {
+            bitmap: maskBitmap,
+            source: maskSource,
+            invert: maskInvert,
+            fit: maskFit,
+            perCell: maskPerCell,
+            cutOverlay: maskCutOverlay,
+          }
+        : null
+
+    const backgroundImage: OverlayOptions | null =
+      backgroundMode === "image" && backgroundBitmap
+        ? {
+            bitmap: backgroundBitmap,
+            opacity: 1,
+            blend: "source-over",
+            fit: backgroundFit,
+            perCell: backgroundPerCell,
+          }
+        : null
+
     setSheet(
       composeSheet({
         frames,
@@ -148,8 +198,10 @@ export function TextureTool() {
         sheetHeight: sheetDims.sheetHeight,
         fit,
         faceAspect,
-        background: transparent ? "transparent" : background,
+        background: backgroundMode === "color" ? background : "transparent",
+        backgroundImage,
         overlay,
+        mask,
       }),
     )
   }, [
@@ -160,14 +212,24 @@ export function TextureTool() {
     sheetDims.sheetHeight,
     fit,
     faceAspect,
-    transparent,
+    backgroundMode,
     background,
+    backgroundFit,
+    backgroundPerCell,
+    backgroundBitmap,
     overlayEnabled,
     overlayBitmap,
     overlayOpacity,
     overlayBlend,
     overlayFit,
     overlayPerCell,
+    maskEnabled,
+    maskBitmap,
+    maskSource,
+    maskInvert,
+    maskFit,
+    maskPerCell,
+    maskCutOverlay,
   ])
 
   const link = linkMode === "this" ? null : linkMode === "specific" ? String(linkNum) : linkMode
@@ -295,6 +357,12 @@ export function TextureTool() {
           overlayBitmap={overlayBitmap}
           overlayName={overlayName}
           onOverlay={handleOverlay}
+          maskBitmap={maskBitmap}
+          maskName={maskName}
+          onMask={handleMask}
+          backgroundBitmap={backgroundBitmap}
+          backgroundName={backgroundName}
+          onBackground={handleBackground}
         />
         <ApplyCard script={script} onCopy={copyScript} />
       </div>
@@ -303,8 +371,8 @@ export function TextureTool() {
         <DialogContent className="max-w-sm">
           <DialogTitle>Reset all settings?</DialogTitle>
           <DialogDescription>
-            This clears your saved preferences and overlay texture and restores the defaults, your
-            current source stays loaded
+            This clears your saved preferences, overlay and mask textures and restores the defaults,
+            your current source stays loaded
           </DialogDescription>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => (ui.resetOpen = false)}>

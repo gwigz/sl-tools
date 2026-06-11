@@ -17,11 +17,13 @@ type DrawArgs =
   | [dx: number, dy: number, dw: number, dh: number]
   | [sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number]
 
+export type DrawableSource = ImageBitmap | HTMLCanvasElement
+
 // drawImage on a closed ImageBitmap throws InvalidStateError; close() zeroes its
 // dimensions. Returns false when the source is closed so callers can stop drawing.
 export function safeDrawImage(
   ctx: CanvasRenderingContext2D,
-  source: ImageBitmap,
+  source: DrawableSource,
   ...args: DrawArgs
 ): boolean {
   if (source.width === 0 || source.height === 0) {
@@ -29,7 +31,7 @@ export function safeDrawImage(
   }
 
   try {
-    ;(ctx.drawImage as (img: ImageBitmap, ...rest: number[]) => void)(source, ...args)
+    ;(ctx.drawImage as (img: DrawableSource, ...rest: number[]) => void)(source, ...args)
 
     return true
   } catch {
@@ -59,24 +61,6 @@ export function downscaleData(bitmap: ImageBitmap, size = 32): Uint8ClampedArray
   ctx.drawImage(bitmap, 0, 0, size, size)
 
   return ctx.getImageData(0, 0, size, size).data
-}
-
-export function bitmapToPngDataUrl(bitmap: ImageBitmap): string {
-  const canvas = document.createElement("canvas")
-  canvas.width = bitmap.width
-  canvas.height = bitmap.height
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0)
-
-  return canvas.toDataURL("image/png")
-}
-
-export function fileToDataUrl(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
 }
 
 export async function loadImageBitmap(file: File) {

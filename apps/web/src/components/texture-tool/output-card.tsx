@@ -16,7 +16,7 @@ import {
 } from "~/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { type AspectState, ASPECT_PRESETS, describeAspect } from "~/lib/sl/aspect"
-import type { FitMode } from "~/lib/sl/compose"
+import type { BackgroundMode, FitMode, MaskSource } from "~/lib/sl/compose"
 
 import { Dropzone } from "./dropzone"
 import { settings } from "./store"
@@ -39,11 +39,23 @@ export function OutputCard({
   overlayBitmap,
   overlayName,
   onOverlay,
+  maskBitmap,
+  maskName,
+  onMask,
+  backgroundBitmap,
+  backgroundName,
+  onBackground,
 }: {
   faceAspect: number
   overlayBitmap: ImageBitmap | null
   overlayName: string | null
   onOverlay: (file: File) => void
+  maskBitmap: ImageBitmap | null
+  maskName: string | null
+  onMask: (file: File) => void
+  backgroundBitmap: ImageBitmap | null
+  backgroundName: string | null
+  onBackground: (file: File) => void
 }) {
   const snap = useSnapshot(settings)
   const aspect = snap.aspect as AspectState
@@ -52,20 +64,29 @@ export function OutputCard({
     fit,
     pow2,
     stretchGrid,
-    transparent,
+    backgroundMode,
     background,
+    backgroundFit,
+    backgroundPerCell,
     overlayEnabled,
     overlayOpacity,
     overlayBlend,
     overlayFit,
     overlayPerCell,
+    maskEnabled,
+    maskSource,
+    maskInvert,
+    maskFit,
+    maskPerCell,
+    maskCutOverlay,
   } = snap
 
   return (
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="size-4" /> Output
+          <ImageIcon className="size-4" />
+          <span>Output</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -182,8 +203,8 @@ export function OutputCard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cover">Cover (crop)</SelectItem>
-                <SelectItem value="contain">Contain (letterbox)</SelectItem>
+                <SelectItem value="cover">Cover (Crop)</SelectItem>
+                <SelectItem value="contain">Contain (Letterbox)</SelectItem>
                 <SelectItem value="stretch">Stretch</SelectItem>
               </SelectContent>
             </Select>
@@ -207,20 +228,140 @@ export function OutputCard({
           checked={stretchGrid}
           onChange={(value) => (settings.stretchGrid = value)}
         />
+        <div className="flex flex-col gap-2">
+          <Label className="text-xs">Background</Label>
+          <Tabs
+            value={backgroundMode}
+            onValueChange={(value) => (settings.backgroundMode = value as BackgroundMode)}
+          >
+            <TabsList className="w-full">
+              <TabsTrigger value="transparent" className="flex-1">
+                Transparent
+              </TabsTrigger>
+              <TabsTrigger value="color" className="flex-1">
+                Color
+              </TabsTrigger>
+              <TabsTrigger value="image" className="flex-1">
+                Image
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {backgroundMode === "color" && (
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs">Background Color</Label>
+              <ColorPicker
+                value={background}
+                onChange={(value) => (settings.background = value)}
+                alpha
+              />
+            </div>
+          )}
+          {backgroundMode === "image" && (
+            <>
+              <Dropzone
+                onSelect={onBackground}
+                accept={OVERLAY_ACCEPT}
+                compact
+                preview={backgroundBitmap}
+                label={backgroundName ?? "Choose Background (PNG, TGA…)"}
+              />
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Fit</Label>
+                <Select
+                  value={backgroundFit}
+                  onValueChange={(value) => (settings.backgroundFit = value as FitMode)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cover">Cover</SelectItem>
+                    <SelectItem value="contain">Contain</SelectItem>
+                    <SelectItem value="stretch">Stretch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <SwitchRow
+                label="Apply Per Frame"
+                hint="Draw on each cell instead of the whole sheet"
+                checked={backgroundPerCell}
+                onChange={(value) => (settings.backgroundPerCell = value)}
+              />
+            </>
+          )}
+        </div>
+
+        <CardDivider />
+
         <SwitchRow
-          label="Transparent Background"
-          checked={transparent}
-          onChange={(value) => (settings.transparent = value)}
+          label="Mask Texture"
+          hint="Alpha-cut frames using another image"
+          checked={maskEnabled}
+          onChange={(value) => (settings.maskEnabled = value)}
         />
-        {!transparent && (
-          <div className="flex items-center justify-between gap-3">
-            <Label className="text-xs">Background Color</Label>
-            <ColorPicker
-              value={background}
-              onChange={(value) => (settings.background = value)}
-              alpha
+        {maskEnabled && (
+          <>
+            <Dropzone
+              onSelect={onMask}
+              accept={OVERLAY_ACCEPT}
+              compact
+              preview={maskBitmap}
+              label={maskName ?? "Choose Mask (PNG, TGA…)"}
             />
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Mask From</Label>
+                <Select
+                  value={maskSource}
+                  onValueChange={(value) => (settings.maskSource = value as MaskSource)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="alpha">Alpha Channel</SelectItem>
+                    <SelectItem value="color">Color Channels</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Fit</Label>
+                <Select
+                  value={maskFit}
+                  onValueChange={(value) => (settings.maskFit = value as FitMode)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stretch">Stretch</SelectItem>
+                    <SelectItem value="cover">Cover</SelectItem>
+                    <SelectItem value="contain">Contain</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <SwitchRow
+              label="Invert Mask"
+              hint="Cut where the mask is opaque or bright instead"
+              checked={maskInvert}
+              onChange={(value) => (settings.maskInvert = value)}
+            />
+            <SwitchRow
+              label="Apply Per Frame"
+              hint="Cut each cell instead of the whole sheet"
+              checked={maskPerCell}
+              onChange={(value) => (settings.maskPerCell = value)}
+            />
+            {overlayEnabled && (
+              <SwitchRow
+                label="Cut Overlay"
+                hint="Also mask the overlay texture, not just the frames"
+                checked={maskCutOverlay}
+                onChange={(value) => (settings.maskCutOverlay = value)}
+              />
+            )}
+          </>
         )}
 
         <CardDivider />

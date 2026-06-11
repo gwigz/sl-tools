@@ -139,7 +139,7 @@ export function PreviewPane({
                 disabled={!sheet || regenerating}
               >
                 {regenerating ? <Spinner /> : <Download />}
-                {regenerating ? "Regenerating…" : "Download texture PNG"}
+                {regenerating ? "Regenerating…" : "Download Texture PNG"}
               </Button>
               <Button size="icon-lg" variant="outline" aria-label="Copy script" onClick={onCopy}>
                 <Copy />

@@ -69,7 +69,8 @@ export function FramesGridCard({
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Grid3x3 className="size-4" /> Frames &amp; Grid
+          <Grid3x3 className="size-4" />
+          <span>Frames &amp; Grid</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

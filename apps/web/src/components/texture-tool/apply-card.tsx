@@ -21,12 +21,12 @@ import { ScriptBlock } from "./script-block"
 import { settings } from "./store"
 
 const LINK_TARGETS = [
-  { value: "this", label: "This prim" },
-  { value: "LINK_SET", label: "Whole linkset" },
-  { value: "LINK_ROOT", label: "Root prim" },
-  { value: "LINK_ALL_CHILDREN", label: "All children" },
-  { value: "LINK_ALL_OTHERS", label: "All other prims" },
-  { value: "specific", label: "Specific link #" },
+  { value: "this", label: "This Prim" },
+  { value: "LINK_SET", label: "Whole Linkset" },
+  { value: "LINK_ROOT", label: "Root Prim" },
+  { value: "LINK_ALL_CHILDREN", label: "All Children" },
+  { value: "LINK_ALL_OTHERS", label: "All Other Prims" },
+  { value: "specific", label: "Specific Link #" },
 ]
 
 export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => void }) {
@@ -36,7 +36,8 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Box className="size-4" /> Apply In-World
+          <Box className="size-4" />
+          <span>Apply In-World</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -83,8 +84,8 @@ export function ApplyCard({ script, onCopy }: { script: string; onCopy: () => vo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All faces (ALL_SIDES)</SelectItem>
-                <SelectItem value="specific">Specific face #</SelectItem>
+                <SelectItem value="all">All Faces (ALL_SIDES)</SelectItem>
+                <SelectItem value="specific">Specific Face #</SelectItem>
               </SelectContent>
             </Select>
           </div>

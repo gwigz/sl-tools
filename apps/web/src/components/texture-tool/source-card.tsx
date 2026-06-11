@@ -25,7 +25,8 @@ export function SourceCard({
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Video className="size-4" /> Source
+          <Video className="size-4" />
+          <span>Source</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

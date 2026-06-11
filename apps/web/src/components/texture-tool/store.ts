@@ -1,7 +1,7 @@
 import { proxy } from "valtio"
 
 import { type AspectState, DEFAULT_ASPECT } from "~/lib/sl/aspect"
-import type { FitMode } from "~/lib/sl/compose"
+import type { BackgroundMode, FitMode, MaskSource } from "~/lib/sl/compose"
 import type { ScriptLanguage } from "~/lib/sl/lsl"
 
 export const DEFAULT_SETTINGS = {
@@ -13,13 +13,21 @@ export const DEFAULT_SETTINGS = {
   pow2: true,
   stretchGrid: false,
   fit: "cover" as FitMode,
-  transparent: true,
+  backgroundMode: "transparent" as BackgroundMode,
   background: "#000000",
+  backgroundFit: "cover" as FitMode,
+  backgroundPerCell: true,
   overlayEnabled: false,
   overlayOpacity: 1,
   overlayBlend: "source-over" as GlobalCompositeOperation,
   overlayFit: "stretch" as FitMode,
   overlayPerCell: true,
+  maskEnabled: false,
+  maskSource: "alpha" as MaskSource,
+  maskInvert: false,
+  maskFit: "stretch" as FitMode,
+  maskPerCell: true,
+  maskCutOverlay: false,
   loop: true,
   reverse: false,
   pingPong: false,
