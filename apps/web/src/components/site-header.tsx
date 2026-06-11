@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs"
 const TOOLS: { href: Route; label: string }[] = [
   { href: "/", label: "Texture Anim" },
   { href: "/shape" as Route, label: "Shape Blender" },
+  { href: "/sound" as Route, label: "Sound Splitter" },
 ]
 
 export function SiteHeader() {
